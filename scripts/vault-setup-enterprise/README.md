@@ -152,13 +152,15 @@ rm .vault-token
 
 After successful setup:
 
-1. **Start Vault Agent** (in a new terminal):
+1. **Start Vault Agent** (from `scripts/vault-setup-enterprise/`):
    ```bash
    vault agent -config=../../configs/vault-agent/vault-agent-enterprise-dev.hcl
    ```
 
-2. **Use file-encryptor**:
+2. **Use file-encryptor** (from repo root):
    ```bash
+   cd ../..
+   
    # Encrypt
    ./bin/file-encryptor encrypt \
      -i test.txt \

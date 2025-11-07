@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/config"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/interfaces"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/logger"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/model"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/config"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/interfaces"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/logger"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/model"
 )
 
 // Watcher watches directories for file changes

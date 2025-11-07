@@ -2,7 +2,7 @@
 # Using token authentication instead of certificate auth for simplicity
 
 vault {
-  address = "https://vault-cluster-primary.vault.11eab575-aee3-cf27-adc9-0242ac11000a.aws.hashicorp.cloud:8200"
+  address = "https://vault-cluster-public-vault-XXXXX.hashicorp.cloud:8200"
   namespace = "admin/vault_crypto"
 }
 

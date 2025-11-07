@@ -1,4 +1,4 @@
-module github.com/gitrgoliveira/vault_file_encryption
+module github.com/gitrgoliveira/vault-file-encryption
 
 go 1.25.0
 

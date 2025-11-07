@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/logger"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/rewrap"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/vault"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/logger"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/rewrap"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/vault"
 	"github.com/spf13/cobra"
 )
 

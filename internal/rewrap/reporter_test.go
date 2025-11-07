@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/vault"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/vault"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

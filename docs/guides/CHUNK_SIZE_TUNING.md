@@ -70,7 +70,7 @@ Override the configured chunk size for a specific operation:
 
 **Use When:**
 - Running on systems with limited RAM
-- Processing many files concurrently
+- Processing many small files sequentially
 - Need responsive progress updates
 - Files are typically small (<10MB)
 
@@ -110,7 +110,6 @@ Override the configured chunk size for a specific operation:
 - High-performance hardware available
 - Throughput is critical
 - Memory is not constrained
-- Sequential processing (not parallel)
 
 ## Tuning Recommendations
 
@@ -167,14 +166,16 @@ Memory per operation ≈ chunk_size × 2 (read + write buffers)
 - 1 MB chunk → ~2 MB per operation
 - 4 MB chunk → ~8 MB per operation
 
-**Service Mode (Parallel Processing):**
-When processing multiple files concurrently:
+**Service Mode:**
+The service processes files sequentially (one at a time), so memory usage is simply:
 
 ```
-Total memory ≈ chunk_size × 2 × num_workers
+Total memory ≈ chunk_size × 2
 ```
 
-For 4 workers with 2 MB chunks: ~16 MB total buffer memory.
+For example, with the default 1 MB chunk size, expect approximately 2 MB of buffer memory during file processing.
+
+**Note**: The service uses a single processor that handles one file at a time from the queue. This means chunk size affects the memory footprint for processing each individual file, not concurrent operations.
 
 ## File Format Compatibility
 
@@ -318,12 +319,3 @@ encryption {
   generate_checksum = true
 }
 ```
-
-## Future Enhancements
-
-**Note:** Auto-tuning based on file size was considered but rejected because:
-- Buffer pools are sized at application startup
-- Multiple concurrent operations need consistent buffer sizes
-- Simpler configuration is more predictable
-
-Instead, choose a chunk size appropriate for your typical file size distribution. If you have widely varying file sizes, choose based on the larger files (as small files complete quickly regardless of chunk size).

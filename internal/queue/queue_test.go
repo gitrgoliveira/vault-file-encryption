@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/model"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

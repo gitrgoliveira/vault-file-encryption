@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/config"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/model"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/config"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/model"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/crypto"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/logger"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/queue"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/vault"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/crypto"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/logger"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/queue"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/vault"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

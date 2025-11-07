@@ -1,12 +1,13 @@
 # Vault Agent Configuration for Local Vault Enterprise (Dev Mode)
 # Uses certificate authentication
+# NOTE: Run vault agent from scripts/vault-setup-enterprise/ directory
 
 vault {
   address = "https://127.0.0.1:8200"
   # No namespace in dev mode (uses root namespace)
   
   # Dev mode uses self-signed certs - trust the generated CA
-  ca_cert = "/Users/ricardo/repos/vault_file_encryption/scripts/vault-setup-enterprise/.vault-tls/vault-ca.pem"
+  ca_cert = "./.vault-tls/vault-ca.pem"
 }
 
 # Auto-authentication using client certificate
@@ -16,13 +17,13 @@ auto_auth {
     
     config = {
       # Path to client certificate
-      client_cert = "/Users/ricardo/repos/vault_file_encryption/scripts/test-certs/client.crt"
+      client_cert = "../test-certs/client.crt"
       
       # Path to client private key
-      client_key = "/Users/ricardo/repos/vault_file_encryption/scripts/test-certs/client-key.pem"
+      client_key = "../test-certs/client-key.pem"
       
       # Path to CA cert for verifying Vault server
-      ca_cert = "/Users/ricardo/repos/vault_file_encryption/scripts/vault-setup-enterprise/.vault-tls/vault-ca.pem"
+      ca_cert = "./.vault-tls/vault-ca.pem"
       
       # Certificate auth mount path
       mount_path = "auth/cert"

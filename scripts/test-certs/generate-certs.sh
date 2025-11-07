@@ -15,7 +15,7 @@ openssl genrsa -out "${CERTS_DIR}/ca-key.pem" 4096
 # Generate CA certificate
 openssl req -new -x509 -days 3650 -key "${CERTS_DIR}/ca-key.pem" \
   -out "${CERTS_DIR}/ca.crt" \
-  -subj "/C=US/ST=State/L=City/O=RicardoOliveira/OU=Development/CN=RicardoOliveira-CA"
+  -subj "/C=US/ST=State/L=City/O=TestOrg/OU=Development/CN=TestOrg-CA"
 
 # Generate client private key
 openssl genrsa -out "${CERTS_DIR}/client-key.pem" 4096
@@ -23,7 +23,7 @@ openssl genrsa -out "${CERTS_DIR}/client-key.pem" 4096
 # Generate client certificate signing request
 openssl req -new -key "${CERTS_DIR}/client-key.pem" \
   -out "${CERTS_DIR}/client.csr" \
-  -subj "/C=US/ST=State/L=City/O=RicardoOliveira/OU=FileEncryptor/CN=file-encryptor.gitrgoliveira.local"
+  -subj "/C=US/ST=State/L=City/O=TestOrg/OU=FileEncryptor/CN=file-encryptor.example.local"
 
 # Sign client certificate with CA
 openssl x509 -req -days 3650 -in "${CERTS_DIR}/client.csr" \

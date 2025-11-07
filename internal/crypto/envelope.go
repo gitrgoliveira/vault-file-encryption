@@ -11,7 +11,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/vault"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/vault"
 )
 
 // VaultClient interface defines the methods needed from vault client

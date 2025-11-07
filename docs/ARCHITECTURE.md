@@ -68,7 +68,7 @@ The application supports **two modes of operation**:
           │ HCP Vault OR Vault Enterprise│
           │                              │
           │  Transit Engine              │
-          │  - Master Key                │
+          │  - Primary Key               │
           │  - Key rotation              │
           │                              │
           │  HCP: Token auth             │
@@ -410,7 +410,7 @@ Destination Directory (Decryption)
 │                    Key Hierarchy (Envelope Encryption)           │
 └─────────────────────────────────────────────────────────────────┘
 
-Master Key (Vault Transit)
+Primary Key (Vault Transit)
      │
      │  Never leaves Vault
      │  Stored in Vault's secure storage
@@ -425,7 +425,7 @@ Master Key (Vault Transit)
      │    │    - Never persisted to disk
      │    │
      │    └─── Ciphertext DEK
-     │         - Encrypted with Master Key
+     │         - Encrypted with Primary Key
      │         - Stored in .key file
      │         - Safe to persist
      │
@@ -435,7 +435,7 @@ Master Key (Vault Transit)
 
 ### Security Features
 
-1. **Envelope Encryption**: Master key never leaves Vault
+1. **Envelope Encryption**: Primary key never leaves Vault
 2. **Memory Security**: Sensitive data zeroed after use
 3. **In-Transit Protection**: Files encrypted before storage
 4. **Audit Logging**: All operations logged
@@ -619,7 +619,7 @@ Localhost
 
 - **Scalability**: Local encryption, remote key management
 - **Performance**: No 32MB file size limit
-- **Security**: Master key never leaves Vault
+- **Security**: Primary key never leaves Vault
 - **Efficiency**: Minimal network traffic
 
 ### Why FIFO Queue?

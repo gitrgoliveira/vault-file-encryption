@@ -8,5 +8,8 @@ transit_key_name   = "file-encryption-key"
 transit_key_type   = "aes256-gcm96"
 cert_auth_mount_path = "cert"
 app_role_name      = "file-encryptor"
-allowed_common_names = ["file-encryptor.gitrgoliveira.local"]
+# Certificate authentication configuration
+# CN must match the client certificate's Common Name
+# Example: file-encryptor.example.local
+allowed_common_names = ["file-encryptor.example.local"]
 certificate_path   = "../test-certs/ca.crt"

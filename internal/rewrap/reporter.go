@@ -7,7 +7,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/vault"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/vault"
 )
 
 // Statistics contains aggregated rewrap operation statistics.

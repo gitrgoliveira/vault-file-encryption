@@ -3,8 +3,8 @@ package interfaces
 import (
 	"context"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/config"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/model"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/config"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/model"
 )
 
 // ConfigManager defines the interface for managing configuration.

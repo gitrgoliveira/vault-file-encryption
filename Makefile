@@ -1,13 +1,13 @@
-# Makefile for vault_file_encryption
+# Makefile for vault-file-encryption
 
 BINARY_NAME=file-encryptor
 VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "0.1.0")
 BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
 GIT_COMMIT=$(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
 
-LDFLAGS=-ldflags "-s -w -X github.com/gitrgoliveira/vault_file_encryption/internal/version.Version=${VERSION} \
-	-X github.com/gitrgoliveira/vault_file_encryption/internal/version.GitCommit=${GIT_COMMIT} \
-	-X github.com/gitrgoliveira/vault_file_encryption/internal/version.BuildDate=${BUILD_TIME}"
+LDFLAGS=-ldflags "-s -w -X github.com/gitrgoliveira/vault-file-encryption/internal/version.Version=${VERSION} \
+	-X github.com/gitrgoliveira/vault-file-encryption/internal/version.GitCommit=${GIT_COMMIT} \
+	-X github.com/gitrgoliveira/vault-file-encryption/internal/version.BuildDate=${BUILD_TIME}"
 
 .PHONY: all build test clean install lint fmt vet deps help build-all build-linux build-darwin build-windows coverage test-integration security gosec staticcheck fmt-check lint-all validate-all ci-validate build-validated
 

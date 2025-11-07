@@ -89,7 +89,7 @@ echo ""
 echo "[6/7] Configuring certificate auth role..."
 vault write auth/cert/certs/file-encryptor \
   certificate=@"${PROJECT_ROOT}/scripts/test-certs/ca.crt" \
-  allowed_common_names="file-encryptor.gitrgoliveira.local" \
+  allowed_common_names="file-encryptor.example.local" \
   token_policies="file-encryptor-policy" \
   token_ttl=3600 \
   token_max_ttl=86400 \
@@ -147,9 +147,10 @@ echo "Next steps:"
 echo "  1. Test the setup:"
 echo "     ./03-test-setup.sh"
 echo ""
-echo "  2. Start Vault Agent:"
+echo "  2. Start Vault Agent (from this directory):"
 echo "     vault agent -config=../../configs/vault-agent/vault-agent-enterprise-dev.hcl"
 echo ""
-echo "  3. Use file-encryptor:"
+echo "  3. Use file-encryptor (from repo root):"
+echo "     cd ../.."
 echo "     ./bin/file-encryptor encrypt -i file.txt -o file.enc -c configs/examples/example-enterprise.hcl"
 echo ""

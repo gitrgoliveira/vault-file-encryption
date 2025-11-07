@@ -43,7 +43,7 @@ variable "app_role_name" {
 variable "allowed_common_names" {
   description = "List of allowed certificate common names"
   type        = list(string)
-  default     = ["file-encryptor.gitrgoliveira.local"]
+  default     = ["file-encryptor.example.local"]
 }
 
 variable "certificate_path" {

@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/crypto"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/logger"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/model"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/crypto"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/logger"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/model"
 )
 
 // ProcessStrategy defines the interface for processing operations

@@ -30,7 +30,8 @@ echo ""
 echo "[TEST 2/6] Checking Vault Agent..."
 if ! lsof -Pi :8210 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
     echo "[FAILED] Vault Agent is not running on port 8210"
-    echo "        Start it with: vault agent -config=configs/vault-agent/vault-agent-enterprise-dev.hcl"
+    echo "        From scripts/vault-setup-enterprise/, run:"
+    echo "        vault agent -config=../../configs/vault-agent/vault-agent-enterprise-dev.hcl"
     exit 1
 fi
 echo "[OK] Vault Agent is running on port 8210"

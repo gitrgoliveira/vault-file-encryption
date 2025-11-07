@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/config"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/model"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/config"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/model"
 )
 
 // Queue is a thread-safe FIFO queue with persistence

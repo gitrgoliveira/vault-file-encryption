@@ -1,17 +1,12 @@
 # Vault File Encryption
 
-[![Build Status](https://github.com/gitrgoliveira/vault_file_encryption/workflows/Build%20and%20Test/badge.svg)](https://github.com/gitrgoliveira/vault_file_encryption/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/gitrgoliveira/vault_file_encryption)](https://goreportcard.com/report/github.com/gitrgoliveira/vault_file_encryption)
+[![Build Status](https://github.com/gitrgoliveira/vault-file-encryption/workflows/Build%20and%20Test/badge.svg)](https://github.com/gitrgoliveira/vault-file-encryption/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gitrgoliveira/vault-file-encryption)](https://goreportcard.com/report/github.com/gitrgoliveira/vault-file-encryption)
 
-A production-ready Golang application that watches directories for files, encrypts them using HashiCorp Vault Transit Engine with envelope encryption, and stores encrypted files securely. Works with both **HCP Vault (cloud)** and **Vault Enterprise (self-hosted)**.
+This application is an MVP that watches directories for files, encrypts them using HashiCorp Vault Transit Engine with envelope encryption, and stores the encrypted files in a separate folder. Works with both **HCP Vault (cloud)** and **Vault Enterprise (self-hosted)**.
 
 ## Current Status
 
-**Production Ready** - Version 0.6.0
-
-Fully tested and production-ready file encryption system with comprehensive testing, CI/CD, and multi-platform support.
-
-**Available Now**: 
 - CLI mode for encrypting/decrypting individual files
 - Service mode for continuous file monitoring and processing
 - Queue system with retry logic and persistence
@@ -59,7 +54,7 @@ Fully tested and production-ready file encryption system with comprehensive test
   - **HCP Vault** cluster with Transit Engine enabled, OR
   - **Vault Enterprise** (or Community Edition) for local development
 - **Vault Agent** configured with appropriate authentication:
-  - **HCP Vault**: Token-based authentication
+  - **HCP Vault**: Token-based authentication (for testing only)
   - **Vault Enterprise**: Certificate-based authentication
 
 ## Quick Start
@@ -67,8 +62,8 @@ Fully tested and production-ready file encryption system with comprehensive test
 ### 1. Build the Application
 
 ```bash
-git clone https://github.com/gitrgoliveira/vault_file_encryption.git
-cd vault_file_encryption
+git clone https://github.com/gitrgoliveira/vault-file-encryption.git
+cd vault-file-encryption
 make build
 ```
 
@@ -182,7 +177,7 @@ The service will:
 
 ### Download Pre-built Binaries
 
-Download the latest release for your platform from the [Releases](https://github.com/gitrgoliveira/vault_file_encryption/releases) page:
+Download the latest release for your platform from the [Releases](https://github.com/gitrgoliveira/vault-file-encryption/releases) page:
 
 - **Windows (64-bit)**: `file-encryptor-windows-amd64.exe`
 - **macOS (64-bit)**: `file-encryptor-darwin-amd64`
@@ -196,8 +191,8 @@ Download the latest release for your platform from the [Releases](https://github
 
 ```bash
 # Unix/Linux/macOS
-git clone https://github.com/gitrgoliveira/vault_file_encryption.git
-cd vault_file_encryption
+git clone https://github.com/gitrgoliveira/vault-file-encryption.git
+cd vault-file-encryption
 make build
 
 # Build for all platforms
@@ -206,8 +201,8 @@ make build-all
 
 ```powershell
 # Windows (using Git Bash or WSL for Make)
-git clone https://github.com/gitrgoliveira/vault_file_encryption.git
-cd vault_file_encryption
+git clone https://github.com/gitrgoliveira/vault-file-encryption.git
+cd vault-file-encryption
 make build-windows
 
 # Or build directly with go
@@ -271,13 +266,14 @@ encryption {
 - Plain numbers: `"1024"` (bytes)
 
 **Size Recommendations**:
-- Small files (<1MB): `64KB-256KB` - Lower memory, more Vault calls
-- Medium files (1-100MB): `1MB-2MB` - Balanced (default: 1MB)
-- Large files (>100MB): `2MB-5MB` - Better throughput
-- Very large files (>1GB): `5MB-10MB` - Maximum performance
+- Small files (<1MB): `256KB` - Lower memory usage
+- Medium files (1-100MB): `512KB-2MB` - Balanced (default: 1MB)
+- Large files (100MB-1GB): `2MB-4MB` - Better throughput
+- Very large files (>1GB): `4MB-8MB` - Maximum performance
 
-See [`docs/guides/CHUNK_SIZE_TUNING.md`](docs/guides/CHUNK_SIZE_TUNING.md) for detailed tuning guide.
-```
+**Note**: Service mode processes one file at a time, so choose chunk size based on your typical file size, not concurrent operations.
+
+See [`docs/guides/CHUNK_SIZE_TUNING.md`](docs/guides/CHUNK_SIZE_TUNING.md) for detailed tuning guide with benchmarking and troubleshooting.
 
 ### Hot Reload
 
@@ -435,8 +431,8 @@ For detailed architecture documentation, see [ARCHITECTURE.md](docs/ARCHITECTURE
 
 ```bash
 # Clone repository
-git clone https://github.com/gitrgoliveira/vault_file_encryption.git
-cd vault_file_encryption
+git clone https://github.com/gitrgoliveira/vault-file-encryption.git
+cd vault-file-encryption
 
 # Install dependencies
 make deps
@@ -457,7 +453,7 @@ make build
 ### Project Structure
 
 ```
-vault_file_encryption/
+vault-file-encryption/
 ├── cmd/file-encryptor/       # Application entry point
 ├── internal/                 # Internal packages
 │   ├── config/              # Configuration management
@@ -639,9 +635,9 @@ pkill -SIGHUP file-encryptor
 ## Support
 
 For issues and questions:
-- **GitHub Issues**: [Report an issue](https://github.com/gitrgoliveira/vault_file_encryption/issues)
+- **GitHub Issues**: [Report an issue](https://github.com/gitrgoliveira/vault-file-encryption/issues)
 - **Documentation**: See the `docs/` directory in this repository
-- **Discussions**: [GitHub Discussions](https://github.com/gitrgoliveira/vault_file_encryption/discussions)
+- **Discussions**: [GitHub Discussions](https://github.com/gitrgoliveira/vault-file-encryption/discussions)
 
 ## Contributing
 

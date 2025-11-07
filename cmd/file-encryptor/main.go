@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gitrgoliveira/vault_file_encryption/internal/config"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/crypto"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/logger"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/service"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/vault"
-	"github.com/gitrgoliveira/vault_file_encryption/internal/version"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/config"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/crypto"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/logger"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/service"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/vault"
+	"github.com/gitrgoliveira/vault-file-encryption/internal/version"
 	"github.com/spf13/cobra"
 )
 

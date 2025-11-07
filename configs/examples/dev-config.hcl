@@ -5,7 +5,7 @@
 vault {
   # For development, use direct HCP Vault access
   # Set VAULT_TOKEN and VAULT_NAMESPACE in environment variables
-  agent_address = "https://vault-cluster-primary.vault.11eab575-aee3-cf27-adc9-0242ac11000a.aws.hashicorp.cloud:8200"
+  agent_address = "https://vault-cluster-public-vault-XXXXX.hashicorp.cloud:8200"
   transit_mount = "transit"
   key_name = "file-encryption-key"
   request_timeout = "30s"

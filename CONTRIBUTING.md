@@ -53,11 +53,11 @@ Enhancement suggestions are welcome! Please include:
 ```bash
 # Unix/Linux/macOS
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/vault_file_encryption.git
-cd vault_file_encryption
+git clone https://github.com/YOUR_USERNAME/vault-file-encryption.git
+cd vault-file-encryption
 
 # Add upstream remote
-git remote add upstream https://github.com/gitrgoliveira/vault_file_encryption.git
+git remote add upstream https://github.com/gitrgoliveira/vault-file-encryption.git
 
 # Install dependencies
 make deps
@@ -70,11 +70,11 @@ go install honnef.co/go/tools/cmd/staticcheck@latest
 ```powershell
 # Windows (using Git Bash or WSL for Make, or use go commands directly)
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/vault_file_encryption.git
-cd vault_file_encryption
+git clone https://github.com/YOUR_USERNAME/vault-file-encryption.git
+cd vault-file-encryption
 
 # Add upstream remote
-git remote add upstream https://github.com/gitrgoliveira/vault_file_encryption.git
+git remote add upstream https://github.com/gitrgoliveira/vault-file-encryption.git
 
 # Install dependencies
 go mod download
@@ -325,7 +325,7 @@ go test -v ./internal/config -run TestLoadConfig
 **Do not open public issues for security vulnerabilities.**
 
 Instead, please report security issues by:
-1. Opening a GitHub Security Advisory at https://github.com/gitrgoliveira/vault_file_encryption/security/advisories/new
+1. Opening a GitHub Security Advisory at https://github.com/gitrgoliveira/vault-file-encryption/security/advisories/new
 2. Or emailing the repository owner (see GitHub profile for contact information)
 
 Include:
