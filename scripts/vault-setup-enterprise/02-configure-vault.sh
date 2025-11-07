@@ -152,5 +152,5 @@ echo "     vault agent -config=../../configs/vault-agent/vault-agent-enterprise-
 echo ""
 echo "  3. Use file-encryptor (from repo root):"
 echo "     cd ../.."
-echo "     ./bin/file-encryptor encrypt -i file.txt -o file.enc -c configs/examples/example-enterprise.hcl"
+echo "     ./bin/file-encryptor encrypt -i file.txt -o file.txt.enc -c configs/examples/example-enterprise.hcl"
 echo ""

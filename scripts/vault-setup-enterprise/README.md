@@ -16,6 +16,9 @@ This directory contains scripts to quickly set up a local Vault Enterprise insta
 
 # Terminal 4: Run end-to-end test
 ./04-end-to-end-test.sh
+
+# When done: Clean up everything
+./99-cleanup.sh
 ```
 
 ## Scripts
@@ -85,6 +88,31 @@ Complete integration test of the entire workflow.
 ./04-end-to-end-test.sh
 ```
 
+### 99-cleanup.sh
+Comprehensive cleanup script that tears down the entire development environment.
+
+**What it does**:
+1. Stops all Vault Server and Vault Agent processes
+2. Frees up ports 8200 and 8210
+3. Removes token files and credentials
+4. Removes development TLS certificates
+5. Optionally removes test certificates
+6. Optionally removes test data directories
+7. Verifies complete cleanup
+
+**Usage**:
+```bash
+# Clean up everything (interactive prompts for optional items)
+./99-cleanup.sh
+```
+
+**Features**:
+- **Safe process termination**: Uses SIGTERM first, then SIGKILL if needed
+- **Interactive cleanup**: Prompts before removing test certificates and data
+- **Port verification**: Checks that ports are freed
+- **Color-coded output**: Clear visual feedback
+- **Comprehensive verification**: Ensures cleanup was successful
+
 ## Environment Variables
 
 See `vault-dev.env.example` for environment variable reference.
@@ -140,10 +168,11 @@ Then run `02-configure-vault.sh` again.
 
 ### Start fresh
 ```bash
-# Stop Vault
-pkill -f "vault server"
+# Complete cleanup (recommended)
+./99-cleanup.sh
 
-# Remove tokens and start over
+# Or manual cleanup
+pkill -f "vault server"
 rm .vault-token
 ./01-start-vault-dev.sh
 ```
@@ -164,14 +193,14 @@ After successful setup:
    # Encrypt
    ./bin/file-encryptor encrypt \
      -i test.txt \
-     -o test.enc \
+     -o test.txt.enc \
      -c configs/examples/example-enterprise.hcl
    
    # Decrypt
    ./bin/file-encryptor decrypt \
-     -i test.enc \
-     -k test.key \
-     -o decrypted.txt \
+     -i test.txt.enc \
+     -k test.txt.key \
+     -o test-decrypted.txt \
      -c configs/examples/example-enterprise.hcl
    ```
 

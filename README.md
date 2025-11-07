@@ -260,7 +260,7 @@ encryption {
 
 **CLI Override**:
 ```bash
-./bin/file-encryptor encrypt -i file.txt -o file.enc --chunk-size 512KB
+./bin/file-encryptor encrypt -i file.txt -o file.txt.enc --chunk-size 512KB
 ```
 
 **Supported Formats**:
@@ -364,12 +364,12 @@ Global Flags:
 
 **Decrypt a file:**
 ```bash
-./bin/file-encryptor decrypt -i file.dat.enc -k file.dat.key -o file.dat
+./bin/file-encryptor decrypt -i file.dat.enc -k file.dat.key -o decrypted-file.dat
 ```
 
 **Decrypt with checksum verification:**
 ```bash
-./bin/file-encryptor decrypt -i file.dat.enc -k file.dat.key -o file.dat --verify-checksum
+./bin/file-encryptor decrypt -i file.dat.enc -k file.dat.key -o decrypted-file.dat --verify-checksum
 ```
 
 **Re-wrap encryption keys to newer version:**

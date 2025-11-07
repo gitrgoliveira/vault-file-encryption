@@ -85,4 +85,4 @@ coverage.html
 *.log
 *.enc
 *.txt
-
+*.sha256

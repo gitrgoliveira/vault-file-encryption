@@ -351,11 +351,11 @@ ls -la test.txt*
 ./bin/file-encryptor decrypt \
   -i test.txt.enc \
   -k test.txt.key \
-  -o decrypted.txt \
+  -o test-decrypted.txt \
   -c configs/examples/example-enterprise.hcl
 
 # Verify
-diff test.txt decrypted.txt
+diff test.txt test-decrypted.txt
 # Should be identical
 ```
 
