@@ -240,11 +240,31 @@ if err != nil {
 
 #### Memory Security
 
-Always zero sensitive data:
+Always zero sensitive data and lock memory when handling keys:
 
 ```go
+// Get plaintext key from Vault
+plaintextKey, err := dataKey.PlaintextBytes()
+if err != nil {
+	return fmt.Errorf("failed to decode key: %w", err)
+}
+
+// Lock key in memory to prevent swapping to disk (best effort)
+unlock, _ := crypto.LockMemory(plaintextKey)
+defer unlock()
+
+// Ensure the key is zeroed when done (constant-time operation)
 defer crypto.SecureZero(plaintextKey)
+
+// Use the key for encryption/decryption...
 ```
+
+**Important Security Patterns**:
+- Always use `defer` immediately after obtaining sensitive data
+- Use `crypto.SecureZero()` for constant-time zeroing (prevents compiler optimization)
+- Use `crypto.LockMemory()` to prevent keys from being swapped to disk
+- Never store plaintext keys on disk
+- Zero buffers containing sensitive data before returning
 
 #### Configuration
 

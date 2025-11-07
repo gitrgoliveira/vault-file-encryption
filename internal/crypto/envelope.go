@@ -29,6 +29,15 @@ const (
 
 	// ProgressReportInterval is the percentage interval for progress logging
 	ProgressReportInterval = 20.0
+
+	// MaxChunksPerFile is the maximum number of chunks allowed per file
+	// With 1MB chunks, this allows files up to ~4 petabytes (2^32 * 1MB)
+	// This prevents nonce overflow (12-byte nonce = 96 bits = 2^96 possible values)
+	MaxChunksPerFile = 1 << 32 // 4,294,967,296 chunks
+
+	// MaxChunkSize is the maximum size allowed for a single chunk (10MB)
+	// This prevents memory exhaustion attacks from malformed encrypted files
+	MaxChunkSize = 10 * 1024 * 1024
 )
 
 // EncryptorConfig holds configuration for the Encryptor
@@ -71,16 +80,25 @@ func (e *Encryptor) EncryptFile(ctx context.Context, sourcePath, destPath string
 	}
 
 	// Convert plaintext key from base64 to bytes
-	plaintextKey, err := dataKey.PlaintextBytes()
+	plaintextKeyBytes, err := dataKey.PlaintextBytes()
 	if err != nil {
 		return "", fmt.Errorf("failed to decode data key: %w", err)
 	}
 
-	// Ensure the plaintext key is zeroed when we're done
-	defer SecureZero(plaintextKey)
+	// Create secure buffer for the plaintext key
+	// This automatically locks memory and will zero on destroy
+	plaintextKey, err := NewSecureBufferFromBytes(plaintextKeyBytes)
+	if err != nil {
+		SecureZero(plaintextKeyBytes) // Clean up the temporary bytes
+		return "", fmt.Errorf("failed to create secure buffer: %w", err)
+	}
+	defer plaintextKey.Destroy()
+
+	// Zero the temporary bytes now that we have a secure buffer
+	SecureZero(plaintextKeyBytes)
 
 	// Encrypt the file with the plaintext DEK
-	if err := e.encryptFileWithKey(ctx, sourcePath, destPath, plaintextKey, progressCallback); err != nil {
+	if err := e.encryptFileWithKey(ctx, sourcePath, destPath, plaintextKey.Data(), progressCallback); err != nil {
 		return "", fmt.Errorf("failed to encrypt file: %w", err)
 	}
 
@@ -154,10 +172,29 @@ func (e *Encryptor) encryptFileWithKey(ctx context.Context, sourcePath, destPath
 		return fmt.Errorf("failed to write nonce: %w", err)
 	}
 
+	// Write file size (8 bytes, big-endian) for integrity checking
+	fileSizeBytes := make([]byte, 8)
+	fileSizeBytes[0] = byte(fileSize >> 56)
+	fileSizeBytes[1] = byte(fileSize >> 48)
+	fileSizeBytes[2] = byte(fileSize >> 40)
+	fileSizeBytes[3] = byte(fileSize >> 32)
+	fileSizeBytes[4] = byte(fileSize >> 24)
+	fileSizeBytes[5] = byte(fileSize >> 16)
+	fileSizeBytes[6] = byte(fileSize >> 8)
+	fileSizeBytes[7] = byte(fileSize)
+
+	if _, err := bufferedWriter.Write(fileSizeBytes); err != nil {
+		return fmt.Errorf("failed to write file size: %w", err)
+	}
+
 	// Get buffer from pool
 	bufPtr := e.bufferPool.Get().(*[]byte)
 	buffer := *bufPtr
 	defer e.bufferPool.Put(bufPtr)
+
+	// Initialize chunk nonce (will be incremented for each chunk)
+	chunkNonce := make([]byte, GCMNonceSize)
+	copy(chunkNonce, baseNonce)
 
 	// Process file in chunks
 	var totalBytesRead int64
@@ -165,6 +202,11 @@ func (e *Encryptor) encryptFileWithKey(ctx context.Context, sourcePath, destPath
 	nextMilestone := ProgressReportInterval
 
 	for {
+		// Check for nonce overflow before processing chunk
+		if chunkIndex >= MaxChunksPerFile {
+			return fmt.Errorf("file too large: exceeds maximum chunk limit of %d", MaxChunksPerFile)
+		}
+
 		// Check context cancellation
 		select {
 		case <-ctx.Done():
@@ -181,16 +223,10 @@ func (e *Encryptor) encryptFileWithKey(ctx context.Context, sourcePath, destPath
 			break
 		}
 
-		// Create nonce for this chunk (base nonce + chunk index)
-		chunkNonce := make([]byte, GCMNonceSize)
-		copy(chunkNonce, baseNonce)
-		// Increment nonce by chunk index to ensure unique nonce per chunk
-		for i := 0; i < chunkIndex; i++ {
-			incrementNonce(chunkNonce)
-		}
-
-		// Encrypt chunk
-		ciphertext := gcm.Seal(nil, chunkNonce, buffer[:n], nil) // #nosec G407 - unique nonce per chunk
+		// Encrypt chunk with current nonce
+		// Use file size as additional authenticated data for GCM
+		additionalData := fileSizeBytes
+		ciphertext := gcm.Seal(nil, chunkNonce, buffer[:n], additionalData) // #nosec G407 - unique nonce per chunk
 
 		// Write encrypted chunk size (4 bytes) then encrypted data
 		chunkSizeBytes := make([]byte, 4)
@@ -210,6 +246,9 @@ func (e *Encryptor) encryptFileWithKey(ctx context.Context, sourcePath, destPath
 		// Update progress
 		totalBytesRead += int64(n)
 		chunkIndex++
+
+		// Increment nonce for next chunk (more efficient than loop)
+		incrementNonce(chunkNonce)
 
 		if progressCallback != nil && fileSize > 0 {
 			progress := float64(totalBytesRead) / float64(fileSize) * 100.0
@@ -269,16 +308,25 @@ func (d *Decryptor) DecryptFile(ctx context.Context, encryptedPath, keyPath, des
 	}
 
 	// Convert plaintext key from base64 to bytes
-	plaintextKey, err := dataKey.PlaintextBytes()
+	plaintextKeyBytes, err := dataKey.PlaintextBytes()
 	if err != nil {
 		return fmt.Errorf("failed to decode data key: %w", err)
 	}
 
-	// Ensure the plaintext key is zeroed when we're done
-	defer SecureZero(plaintextKey)
+	// Create secure buffer for the plaintext key
+	// This automatically locks memory and will zero on destroy
+	plaintextKey, err := NewSecureBufferFromBytes(plaintextKeyBytes)
+	if err != nil {
+		SecureZero(plaintextKeyBytes) // Clean up the temporary bytes
+		return fmt.Errorf("failed to create secure buffer: %w", err)
+	}
+	defer plaintextKey.Destroy()
+
+	// Zero the temporary bytes now that we have a secure buffer
+	SecureZero(plaintextKeyBytes)
 
 	// Decrypt the file with the plaintext DEK
-	if err := d.decryptFileWithKey(ctx, encryptedPath, destPath, plaintextKey, progressCallback); err != nil {
+	if err := d.decryptFileWithKey(ctx, encryptedPath, destPath, plaintextKey.Data(), progressCallback); err != nil {
 		return fmt.Errorf("failed to decrypt file: %w", err)
 	}
 
@@ -345,16 +393,31 @@ func (d *Decryptor) decryptFileWithKey(ctx context.Context, sourcePath, destPath
 		return fmt.Errorf("failed to read nonce: %w", err)
 	}
 
+	// Read the original file size (8 bytes)
+	fileSizeBytes := make([]byte, 8)
+	if _, err := io.ReadFull(bufferedReader, fileSizeBytes); err != nil {
+		return fmt.Errorf("failed to read file size: %w", err)
+	}
+
 	// Get buffer from pool
 	bufPtr := d.bufferPool.Get().(*[]byte)
 	defer d.bufferPool.Put(bufPtr)
 
+	// Initialize chunk nonce (will be incremented for each chunk)
+	chunkNonce := make([]byte, GCMNonceSize)
+	copy(chunkNonce, baseNonce)
+
 	// Process file in chunks
-	var totalBytesRead int64 = GCMNonceSize
+	var totalBytesRead int64 = GCMNonceSize + 8 // nonce + file size
 	chunkIndex := 0
 	nextMilestone := ProgressReportInterval
 
 	for {
+		// Check for nonce overflow before processing chunk
+		if chunkIndex >= MaxChunksPerFile {
+			return fmt.Errorf("file too large: exceeds maximum chunk limit of %d", MaxChunksPerFile)
+		}
+
 		// Check context cancellation
 		select {
 		case <-ctx.Done():
@@ -378,22 +441,21 @@ func (d *Decryptor) decryptFileWithKey(ctx context.Context, sourcePath, destPath
 		// Parse chunk size
 		chunkSize := int(chunkSizeBytes[0])<<24 | int(chunkSizeBytes[1])<<16 | int(chunkSizeBytes[2])<<8 | int(chunkSizeBytes[3])
 
+		// Validate chunk size to prevent memory exhaustion attacks
+		if chunkSize <= 0 || chunkSize > MaxChunkSize {
+			return fmt.Errorf("invalid chunk size: %d (must be between 1 and %d bytes)", chunkSize, MaxChunkSize)
+		}
+
 		// Read encrypted chunk using buffer from pool
 		encryptedChunk := (*bufPtr)[:chunkSize]
 		if _, err := io.ReadFull(bufferedReader, encryptedChunk); err != nil {
 			return fmt.Errorf("failed to read encrypted chunk: %w", err)
 		}
 
-		// Create nonce for this chunk
-		chunkNonce := make([]byte, GCMNonceSize)
-		copy(chunkNonce, baseNonce)
-		// Increment nonce by chunk index to ensure unique nonce per chunk
-		for i := 0; i < chunkIndex; i++ {
-			incrementNonce(chunkNonce)
-		}
-
-		// Decrypt chunk
-		plaintext, err := gcm.Open(nil, chunkNonce, encryptedChunk, nil)
+		// Decrypt chunk with current nonce
+		// Use file size as additional authenticated data for GCM
+		additionalData := fileSizeBytes
+		plaintext, err := gcm.Open(nil, chunkNonce, encryptedChunk, additionalData)
 		if err != nil {
 			return fmt.Errorf("failed to decrypt chunk: %w", err)
 		}
@@ -406,6 +468,9 @@ func (d *Decryptor) decryptFileWithKey(ctx context.Context, sourcePath, destPath
 		// Update progress
 		totalBytesRead += int64(4 + chunkSize)
 		chunkIndex++
+
+		// Increment nonce for next chunk (more efficient than loop)
+		incrementNonce(chunkNonce)
 
 		if progressCallback != nil && fileSize > 0 {
 			progress := float64(totalBytesRead) / float64(fileSize) * 100.0

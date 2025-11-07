@@ -24,15 +24,20 @@ This application is an MVP that watches directories for files, encrypts them usi
 - **Progress Logging**: Real-time progress updates every 20%
 - **Retry Logic**: FIFO queue with exponential backoff
 - **Integrity Verification**: Optional SHA256 checksum validation
-- **Hot Reload**: Configuration changes without restart (SIGHUP)
-- **Security**: In-memory data zeroing, audit logging
+- **Hot Reload**: Configuration changes without restart (SIGHUP on Unix)
+- **Enhanced Security**: 
+  - Constant-time memory zeroing (prevents compiler optimization)
+  - Memory locking (prevents key swapping to disk)
+  - Nonce overflow detection (prevents cryptographic failures)
+  - Chunk size validation (prevents DOS attacks)
+  - File metadata authentication via GCM
 - **Cross-Platform**: Binaries for macOS, Windows, Linux (64-bit)
 - **Comprehensive Logging**: Plaintext or JSON format with audit support
 - **CLI Mode**: One-off encryption/decryption operations
 - **Configurable Chunk Size**: Optimize encryption for file size (64KB-10MB)
 - **Key Re-wrapping**: Rotate encrypted DEKs to newer Vault key versions without re-encrypting data
 - **Security Scanning**: gosec, staticcheck, golangci-lint integration
-- **Comprehensive Testing**: 100+ unit tests, integration tests
+- **Comprehensive Testing**: 369+ tests with 82%+ coverage
 
 ## Table of Contents
 
@@ -626,11 +631,38 @@ pkill -SIGHUP file-encryptor
 
 ## Security Considerations
 
-- **Vault Agent**: Uses certificate-based authentication
+### Cryptographic Security
 - **Envelope Encryption**: Data keys never stored unencrypted
-- **Memory Security**: Sensitive data zeroed after use
-- **Audit Logging**: All operations logged
-- **TLS**: All Vault communication over TLS
+- **AES-256-GCM**: Authenticated encryption with 256-bit keys
+- **Unique Nonces**: Each chunk uses base nonce + counter (prevents nonce reuse)
+- **File Metadata Authentication**: File size authenticated via GCM additional data
+- **Nonce Overflow Protection**: Maximum 2^32 chunks per file (~4 petabytes with 1MB chunks)
+
+### Memory Security
+- **Constant-Time Zeroing**: Uses `crypto/subtle` to prevent compiler optimization
+- **Memory Locking**: Plaintext DEKs locked in RAM (mlock) to prevent swapping to disk
+- **Immediate Cleanup**: Keys zeroed from memory immediately after use
+- **Secure Patterns**: Defer-based cleanup ensures keys are always zeroed
+
+### DOS Prevention
+- **Chunk Size Validation**: Rejects chunks larger than 10MB during decryption
+- **File Size Limits**: Enforces maximum file size based on chunk count
+- **Resource Protection**: Prevents memory exhaustion from malformed files
+
+### Infrastructure Security
+- **Vault Agent**: Uses token authentication (HCP) or certificate authentication (Enterprise)
+- **TLS**: All Vault communication over HTTPS
+- **Audit Logging**: All operations logged with security events
+- **No Primary Key Exposure**: Primary key never leaves Vault
+
+### File Format Security
+Encrypted files include:
+- 12-byte master nonce (unique per file)
+- 8-byte authenticated file size
+- Per-chunk encryption with incremented nonces
+- GCM authentication tags (128-bit per chunk)
+
+For detailed security architecture, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Support
 
@@ -660,7 +692,7 @@ See [LICENSE](LICENSE) for full details.
 
 ## Project Status
 
-**Current Version**: 0.6.0 (Production Ready)
+**Current Version**: 0.0.1 (MVP)
 
 ### Completed Features
 
