@@ -37,8 +37,7 @@ jobs:
 
       - name: Install golangci-lint
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.61.0
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.6.1
 
       - name: Run all validation checks
         run: make validate-all
