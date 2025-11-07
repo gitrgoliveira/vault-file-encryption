@@ -37,48 +37,48 @@ The diagram below shows both the continuous Service Mode path (through watcher +
 ```mermaid
 flowchart TB
   subgraph ServiceMode[Service Mode - watch]
-    SRC["Source Directory\n(plaintext for encryption\nor .enc+.key pairs for decryption)"]
-    SRC --> W[File Watcher\nfsnotify + startup scan]
-    W --> D[Stability Check\nsize settle detection]
-    D --> Q[FIFO Queue\nretries + persistence]
+    SRC["Source Directory (plaintext for encryption or .enc+.key pairs for decryption)"]
+    SRC --> W[File Watcher fsnotify + startup scan]
+    W --> D[Stability Check size settle detection]
+    D --> Q[FIFO Queue retries + persistence]
   end
 
   subgraph CLIMode[CLI Mode - one-off]
-    CLI["CLI Command\nencrypt | decrypt"]
+    CLI["CLI Command encrypt | decrypt"]
   end
 
   Q --> PROC
   CLI --> PROC
 
-  PROC[Processor\nstrategy: Encrypt or Decrypt]
+  PROC[Processor strategy: Encrypt or Decrypt]
 
   PROC -->|Encryption| ENC_FLOW{Encryption Flow}
   PROC -->|Decryption| DEC_FLOW{Decryption Flow}
 
-  ENC_FLOW -->|1. Request DEK| V1[(Vault Transit\n/datakey/plaintext)]
+  ENC_FLOW -->|1. Request DEK| V1[(Vault Transit/datakey/plaintext)]
   V1 -->|plaintext + ciphertext DEK| ENC_FLOW
   ENC_FLOW -->|2. Encrypt with DEK| ENC_OUT["Output Files"]
-  ENC_OUT --> ENC_FILE["file.enc\nAES-256-GCM chunks"]
-  ENC_OUT --> KEY_FILE["file.key\nciphertext DEK"]
-  ENC_OUT -->|optional| HASH_FILE["file.sha256\nchecksum"]
+  ENC_OUT --> ENC_FILE["file.enc AES-256-GCM chunks"]
+  ENC_OUT --> KEY_FILE["file.key ciphertext DEK"]
+  ENC_OUT -->|optional| HASH_FILE["file.sha256 checksum"]
 
   DEC_FLOW -->|1. Read ciphertext DEK| KEY_FILE
-  DEC_FLOW -->|2. Decrypt DEK| V2[(Vault Transit\n/decrypt)]
+  DEC_FLOW -->|2. Decrypt DEK| V2[(Vault Transit/decrypt)]
   V2 -->|plaintext DEK| DEC_FLOW
-  DEC_FLOW -->|3. Decrypt file| PLAIN["file\nplaintext"]
+  DEC_FLOW -->|3. Decrypt file| PLAIN["file plaintext"]
 
   ENC_FILE -.->|becomes source for decryption| SRC
   KEY_FILE -.->|paired with .enc| SRC
 
-  PROC -->|Success| CLEANUP[Post-Process\narchive or delete originals]
+  PROC -->|Success| CLEANUP[Post-Process archive or delete originals]
 
   subgraph KeyMaint[Key Maintenance - separate operations]
-    REWRAP[rewrap command\nrotate to newer key version]
-    AUDIT[key-versions command\noffline audit, no Vault]
+    REWRAP[rewrap command rotate to newer key version]
+    AUDIT[key-versions command offline audit, no Vault]
   end
 
   REWRAP -->|read| KEY_FILE
-  REWRAP -->|call| V3[(Vault Transit\n/rewrap)]
+  REWRAP -->|call| V3[(Vault Transit/rewrap)]
   V3 -->|update| KEY_FILE
   AUDIT -->|read only| KEY_FILE
 
@@ -491,6 +491,124 @@ For detailed rewrap documentation, see [REWRAP_GUIDE.md](docs/guides/REWRAP_GUID
 ## Architecture
 
 For detailed architecture documentation, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+### Vault Policies
+
+The application requires specific Vault Transit Engine capabilities depending on the operation mode. Three separate policies are recommended for least-privilege access:
+
+#### 1. Encryption Policy
+
+Required for encrypting files (generating and encrypting data keys):
+
+```hcl
+# Policy name: file-encryptor-encrypt
+path "transit/datakey/plaintext/file-encryption-key" {
+  capabilities = ["update"]
+}
+```
+
+**Capabilities:**
+- `datakey/plaintext/*` - Generate a new data encryption key (DEK) in both plaintext and ciphertext forms
+
+**Used by:**
+- Service mode encryption operations
+- CLI `encrypt` command
+
+#### 2. Decryption Policy
+
+Required for decrypting files (decrypting data keys):
+
+```hcl
+# Policy name: file-encryptor-decrypt
+path "transit/decrypt/file-encryption-key" {
+  capabilities = ["update"]
+}
+```
+
+**Capabilities:**
+- `decrypt/*` - Decrypt the ciphertext DEK to obtain the plaintext DEK
+
+**Used by:**
+- Service mode decryption operations
+- CLI `decrypt` command
+
+#### 3. Re-wrap Policy
+
+Required for key rotation (re-wrapping encrypted DEKs to newer key versions):
+
+```hcl
+# Policy name: file-encryptor-rewrap
+path "transit/rewrap/file-encryption-key" {
+  capabilities = ["update"]
+}
+```
+
+**Capabilities:**
+- `rewrap/*` - Re-encrypt an existing ciphertext DEK with the latest key version without exposing plaintext
+
+**Used by:**
+- CLI `rewrap` command
+
+#### Combined Policy (Development/Testing Only)
+
+For development or testing environments, you can use a combined policy with all capabilities:
+
+```hcl
+# Policy name: file-encryptor-combined (NOT recommended for production)
+path "transit/datakey/plaintext/file-encryption-key" {
+  capabilities = ["update"]
+}
+
+path "transit/decrypt/file-encryption-key" {
+  capabilities = ["update"]
+}
+
+path "transit/rewrap/file-encryption-key" {
+  capabilities = ["update"]
+}
+```
+
+**Production Recommendation:**
+- Use **separate policies** for each operation type
+- Assign policies based on the specific role (encryption-only systems, decryption-only systems, key rotation operators)
+- Apply the principle of least privilege
+
+#### Policy Assignment Examples
+
+**HCP Vault (Token Auth):**
+```bash
+# Create policies
+vault policy write file-encryptor-encrypt encrypt-policy.hcl
+vault policy write file-encryptor-decrypt decrypt-policy.hcl
+vault policy write file-encryptor-rewrap rewrap-policy.hcl
+
+# Generate tokens with specific policies
+vault token create -policy=file-encryptor-encrypt -period=24h
+vault token create -policy=file-encryptor-decrypt -period=24h
+vault token create -policy=file-encryptor-rewrap -period=1h
+```
+
+**Vault Enterprise (Certificate Auth):**
+```bash
+# Map certificate common names to policies
+vault write auth/cert/certs/file-encryptor-encrypt \
+  certificate=@client-encrypt.crt \
+  policies=file-encryptor-encrypt
+
+vault write auth/cert/certs/file-encryptor-decrypt \
+  certificate=@client-decrypt.crt \
+  policies=file-encryptor-decrypt
+
+vault write auth/cert/certs/file-encryptor-rewrap \
+  certificate=@client-rewrap.crt \
+  policies=file-encryptor-rewrap
+```
+
+**Note:** The `key-versions` command does not require any Vault access as it operates offline on local `.key` files.
+
+For complete Vault setup instructions including policy configuration, see:
+- [Vault Setup Guide (HCP)](docs/guides/VAULT_SETUP_GUIDE.md)
+- [Vault Enterprise Setup Guide](docs/guides/VAULT_ENTERPRISE_SETUP_GUIDE.md)
 
 
 ## Development
