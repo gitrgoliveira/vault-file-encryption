@@ -9,15 +9,16 @@ This application is an MVP that watches directories for files, encrypts them usi
 ## High-Level Overview
 
 ```
-[File Watcher] ---> [FIFO Queue] ---> [Processor]
-                                     |
-                                     v
-                                [Vault Agent]
-                              (local listener)
-                                     |
-                                     v
-                              [Vault Transit]
-                              [   Engine    ]
+[File Watcher] 
+[     or     ] ---> [FIFO Queue] ---> [Processor]
+[    CLI     ]                            |
+                                          v
+                                    [Vault Agent]
+                                  (local listener)
+                                         |
+                                         v
+                                  [Vault Transit]
+                                   [   Engine    ]
 ```
 
 ### Encryption Flow
