@@ -240,7 +240,7 @@ func (w *Watcher) handleFileCreated(ctx context.Context, filePath string) {
 		item.DestPath = destPath + ".enc"
 		// Key file is based on the original source filename, stored in destination directory
 		originalName := filepath.Base(filePath)
-		item.KeyPath = filepath.Join(filepath.Dir(destPath), originalName + ".key")
+		item.KeyPath = filepath.Join(filepath.Dir(destPath), originalName+".key")
 	}
 
 	// Enqueue for processing

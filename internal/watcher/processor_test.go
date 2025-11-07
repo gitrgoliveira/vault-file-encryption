@@ -141,7 +141,7 @@ func TestProcessor_EncryptFile(t *testing.T) {
 	item := model.NewItem(model.OperationEncrypt, sourceFile, destFile)
 	// Key file is based on original source filename, stored in destination directory
 	originalName := filepath.Base(sourceFile)
-	item.KeyPath = filepath.Join(filepath.Dir(destFile), originalName + ".key")
+	item.KeyPath = filepath.Join(filepath.Dir(destFile), originalName+".key")
 	info, _ := os.Stat(sourceFile)
 	item.FileSize = info.Size()
 
@@ -192,7 +192,7 @@ func TestProcessor_EncryptFile_Delete(t *testing.T) {
 	item := model.NewItem(model.OperationEncrypt, sourceFile, destFile)
 	// Key file is based on original source filename, stored in destination directory
 	originalName := filepath.Base(sourceFile)
-	item.KeyPath = filepath.Join(filepath.Dir(destFile), originalName + ".key")
+	item.KeyPath = filepath.Join(filepath.Dir(destFile), originalName+".key")
 	info, _ := os.Stat(sourceFile)
 	item.FileSize = info.Size()
 
@@ -451,7 +451,7 @@ func TestProcessor_ProcessItem_EncryptionFailure(t *testing.T) {
 	item := model.NewItem(model.OperationEncrypt, sourceFile, destFile)
 	// Key file is based on original source filename, stored in destination directory
 	originalName := filepath.Base(sourceFile)
-	item.KeyPath = filepath.Join(filepath.Dir(destFile), originalName + ".key")
+	item.KeyPath = filepath.Join(filepath.Dir(destFile), originalName+".key")
 	item.FileSize = 0
 
 	err := q.Enqueue(item)
