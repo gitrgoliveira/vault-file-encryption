@@ -15,6 +15,7 @@ func TestNewManager(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.hcl")
 
+	// Use ToSlash to avoid Windows path escaping issues in HCL
 	hclContent := `
 vault {
   agent_address = "http://127.0.0.1:8200"
@@ -23,13 +24,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
@@ -75,6 +76,7 @@ func TestManager_Get(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.hcl")
 
+	// Use ToSlash to avoid Windows path escaping issues in HCL
 	hclContent := `
 vault {
   agent_address = "http://127.0.0.1:8200"
@@ -83,13 +85,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
@@ -114,6 +116,7 @@ func TestManager_Reload(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.hcl")
 
+	// Use ToSlash to avoid Windows path escaping issues in HCL
 	hclContent1 := `
 vault {
   agent_address = "http://127.0.0.1:8200"
@@ -122,13 +125,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
@@ -155,13 +158,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
@@ -186,6 +189,7 @@ func TestManager_Reload_InvalidConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.hcl")
 
+	// Use ToSlash to avoid Windows path escaping issues in HCL
 	hclContent1 := `
 vault {
   agent_address = "http://127.0.0.1:8200"
@@ -194,13 +198,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
@@ -239,6 +243,7 @@ func TestManager_OnReload(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.hcl")
 
+	// Use ToSlash to avoid Windows path escaping issues in HCL
 	hclContent1 := `
 vault {
   agent_address = "http://127.0.0.1:8200"
@@ -247,13 +252,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
@@ -285,13 +290,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
@@ -317,6 +322,7 @@ func TestManager_MultipleCallbacks(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.hcl")
 
+	// Use ToSlash to avoid Windows path escaping issues in HCL
 	hclContent1 := `
 vault {
   agent_address = "http://127.0.0.1:8200"
@@ -325,13 +331,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
@@ -364,13 +370,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
@@ -395,6 +401,7 @@ func TestManager_ConcurrentAccess(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.hcl")
 
+	// Use ToSlash to avoid Windows path escaping issues in HCL
 	hclContent := `
 vault {
   agent_address = "http://127.0.0.1:8200"
@@ -403,13 +410,13 @@ vault {
 }
 
 encryption {
-  source_dir = "` + filepath.Join(tmpDir, "source") + `"
-  dest_dir = "` + filepath.Join(tmpDir, "dest") + `"
+  source_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "source")) + `"
+  dest_dir = "` + filepath.ToSlash(filepath.Join(tmpDir, "dest")) + `"
   source_file_behavior = "archive"
 }
 
 queue {
-  state_path = "` + filepath.Join(tmpDir, "queue.json") + `"
+  state_path = "` + filepath.ToSlash(filepath.Join(tmpDir, "queue.json")) + `"
 }
 
 logging {
