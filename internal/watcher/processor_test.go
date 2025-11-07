@@ -69,7 +69,7 @@ func setupTestProcessor(t *testing.T, cfg *ProcessorConfig) (*Processor, *queue.
 	decryptor := crypto.NewDecryptor(vaultClient, nil)
 
 	// Create logger
-	log, err := logger.New("error", "/dev/null") // Log to null device in tests
+	log, err := logger.New("error", os.DevNull) // Log to null device in tests (cross-platform)
 	require.NoError(t, err)
 
 	// Create processor
@@ -394,7 +394,7 @@ func setupTestProcessorWithExactConfig(t *testing.T, cfg *ProcessorConfig) (*Pro
 	decryptor := crypto.NewDecryptor(vaultClient, nil)
 
 	// Create logger
-	log, err := logger.New("error", "/dev/null") // Log to null device in tests
+	log, err := logger.New("error", os.DevNull) // Log to null device in tests (cross-platform)
 	require.NoError(t, err)
 
 	// Create processor with exact config (don't override empty values)

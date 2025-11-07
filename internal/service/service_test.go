@@ -297,10 +297,11 @@ func TestService_Close(t *testing.T) {
 // createTestConfigFile creates a temporary HCL config file for testing.
 func createTestConfigFile(t *testing.T, cfg *config.Config) string {
 	t.Helper()
+	// Convert all paths to forward slashes for HCL (Windows backslashes cause parse errors)
 	content := `
 		logging {
 			level = "` + cfg.Logging.Level + `"
-			output = "` + cfg.Logging.Output + `"
+			output = "` + filepath.ToSlash(cfg.Logging.Output) + `"
 		}
 		vault {
 			agent_address = "` + cfg.Vault.AgentAddress + `"
@@ -308,17 +309,17 @@ func createTestConfigFile(t *testing.T, cfg *config.Config) string {
 			key_name = "` + cfg.Vault.KeyName + `"
 		}
 		encryption {
-			source_dir = "` + cfg.Encryption.SourceDir + `"
-			dest_dir = "` + cfg.Encryption.DestDir + `"
+			source_dir = "` + filepath.ToSlash(cfg.Encryption.SourceDir) + `"
+			dest_dir = "` + filepath.ToSlash(cfg.Encryption.DestDir) + `"
 			source_file_behavior = "archive"
 		}
 		decryption {
-			source_dir = "` + cfg.Decryption.SourceDir + `"
-			dest_dir = "` + cfg.Decryption.DestDir + `"
+			source_dir = "` + filepath.ToSlash(cfg.Decryption.SourceDir) + `"
+			dest_dir = "` + filepath.ToSlash(cfg.Decryption.DestDir) + `"
 			source_file_behavior = "archive"
 		}
 		queue {
-			state_path = "` + cfg.Queue.StatePath + `"
+			state_path = "` + filepath.ToSlash(cfg.Queue.StatePath) + `"
 		}
 	`
 	tmpFile, err := os.CreateTemp(t.TempDir(), "config-*.hcl")

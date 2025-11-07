@@ -67,7 +67,7 @@ func setupTestWatcher(t *testing.T, cfg *Config) (*Watcher, *queue.Queue, string
 	require.NoError(t, err)
 
 	// Create logger
-	log, err := logger.New("error", "/dev/null")
+	log, err := logger.New("error", os.DevNull) // Log to null device (cross-platform)
 	require.NoError(t, err)
 
 	// Create watcher
