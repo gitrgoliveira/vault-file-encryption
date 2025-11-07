@@ -117,7 +117,7 @@ func runRewrap(keyFile, directory string, recursive, dryRun bool, minVersion int
 		AgentAddress: cfg.Vault.AgentAddress,
 		TransitMount: cfg.Vault.TransitMount,
 		KeyName:      cfg.Vault.KeyName,
-		Timeout:      cfg.Vault.RequestTimeout.Duration(),
+		Timeout:      cfg.Vault.RequestTimeout,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create vault client: %w", err)

@@ -47,7 +47,7 @@ logging {
 	assert.Equal(t, "http://127.0.0.1:8200", cfg.Vault.AgentAddress)
 	assert.Equal(t, "transit", cfg.Vault.TransitMount)
 	assert.Equal(t, "test-key", cfg.Vault.KeyName)
-	assert.Equal(t, Duration(30*time.Second), cfg.Vault.RequestTimeout) // Default
+	assert.Equal(t, 30*time.Second, cfg.Vault.RequestTimeout) // Default
 
 	// Verify Encryption config
 	assert.Equal(t, "/tmp/source", cfg.Encryption.SourceDir)
@@ -58,9 +58,9 @@ logging {
 	// Verify Queue config
 	assert.Equal(t, "/tmp/queue.json", cfg.Queue.StatePath)
 	assert.Equal(t, 5, cfg.Queue.MaxRetries)
-	assert.Equal(t, Duration(1*time.Second), cfg.Queue.BaseDelay)         // Default
-	assert.Equal(t, Duration(5*time.Minute), cfg.Queue.MaxDelay)          // Default
-	assert.Equal(t, Duration(1*time.Second), cfg.Queue.StabilityDuration) // Default
+	assert.Equal(t, 1*time.Second, cfg.Queue.BaseDelay)         // Default
+	assert.Equal(t, 5*time.Minute, cfg.Queue.MaxDelay)          // Default
+	assert.Equal(t, 1*time.Second, cfg.Queue.StabilityDuration) // Default
 
 	// Verify Logging config
 	assert.Equal(t, "debug", cfg.Logging.Level)
@@ -135,16 +135,16 @@ func TestSetDefaults(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Vault defaults
-	assert.Equal(t, Duration(30*time.Second), cfg.Vault.RequestTimeout)
+	assert.Equal(t, 30*time.Second, cfg.Vault.RequestTimeout)
 
 	// Encryption defaults
 	assert.Equal(t, "archive", cfg.Encryption.SourceFileBehavior)
 
 	// Queue defaults
 	assert.Equal(t, 3, cfg.Queue.MaxRetries)
-	assert.Equal(t, Duration(1*time.Second), cfg.Queue.BaseDelay)
-	assert.Equal(t, Duration(5*time.Minute), cfg.Queue.MaxDelay)
-	assert.Equal(t, Duration(1*time.Second), cfg.Queue.StabilityDuration)
+	assert.Equal(t, 1*time.Second, cfg.Queue.BaseDelay)
+	assert.Equal(t, 5*time.Minute, cfg.Queue.MaxDelay)
+	assert.Equal(t, 1*time.Second, cfg.Queue.StabilityDuration)
 
 	// Logging defaults
 	assert.Equal(t, "info", cfg.Logging.Level)
@@ -559,4 +559,84 @@ logging {
 				"Chunk size should be %d bytes (%s)", tt.expectedSize, FormatSize(tt.expectedSize))
 		})
 	}
+}
+
+func TestLoadFromString_WithDurations(t *testing.T) {
+	hclContent := `
+vault {
+  agent_address = "http://127.0.0.1:8200"
+  transit_mount = "transit"
+  key_name = "test-key"
+  request_timeout = "45s"
+}
+
+encryption {
+  source_dir = "/tmp/source"
+  dest_dir = "/tmp/dest"
+  source_file_behavior = "archive"
+  chunk_size = "2MB"
+}
+
+queue {
+  state_path = "/tmp/queue.json"
+  max_retries = 10
+  base_delay = "2s"
+  max_delay = "10m"
+  stability_duration = "500ms"
+}
+
+logging {
+  level = "info"
+  output = "stdout"
+  format = "text"
+}
+`
+
+	cfg, err := LoadFromString("test-durations.hcl", hclContent)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	// Verify duration parsing worked
+	assert.Equal(t, 45*time.Second, cfg.Vault.RequestTimeout, "request_timeout should be parsed from HCL")
+	assert.Equal(t, 2*time.Second, cfg.Queue.BaseDelay, "base_delay should be parsed from HCL")
+	assert.Equal(t, 10*time.Minute, cfg.Queue.MaxDelay, "max_delay should be parsed from HCL")
+	assert.Equal(t, 500*time.Millisecond, cfg.Queue.StabilityDuration, "stability_duration should be parsed from HCL")
+
+	// Verify chunk size parsing (SI units: 2MB = 2,000,000 bytes)
+	assert.Equal(t, 2000000, cfg.Encryption.ChunkSize, "chunk_size should be parsed as 2MB (SI units)")
+
+	// Verify other fields
+	assert.Equal(t, 10, cfg.Queue.MaxRetries)
+}
+
+func TestLoadFromString_InvalidDuration(t *testing.T) {
+	hclContent := `
+vault {
+  agent_address = "http://127.0.0.1:8200"
+  transit_mount = "transit"
+  key_name = "test-key"
+  request_timeout = "invalid"
+}
+
+encryption {
+  source_dir = "/tmp/source"
+  dest_dir = "/tmp/dest"
+  source_file_behavior = "archive"
+}
+
+queue {
+  state_path = "/tmp/queue.json"
+}
+
+logging {
+  level = "info"
+  output = "stdout"
+  format = "text"
+}
+`
+
+	cfg, err := LoadFromString("test-invalid.hcl", hclContent)
+	require.Error(t, err)
+	require.Nil(t, cfg)
+	assert.Contains(t, err.Error(), "invalid request_timeout duration", "should error on invalid duration format")
 }

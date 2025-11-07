@@ -109,7 +109,7 @@ func (s *Service) setupVaultAndCrypto(cfg *config.Config) error {
 		AgentAddress: cfg.Vault.AgentAddress,
 		TransitMount: cfg.Vault.TransitMount,
 		KeyName:      cfg.Vault.KeyName,
-		Timeout:      cfg.Vault.RequestTimeout.Duration(),
+		Timeout:      cfg.Vault.RequestTimeout,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create Vault client: %w", err)
@@ -130,8 +130,8 @@ func (s *Service) setupVaultAndCrypto(cfg *config.Config) error {
 func (s *Service) setupQueue(cfg *config.Config) error {
 	q, err := queue.NewQueue(&queue.Config{
 		MaxRetries: cfg.Queue.MaxRetries,
-		BaseDelay:  cfg.Queue.BaseDelay.Duration(),
-		MaxDelay:   cfg.Queue.MaxDelay.Duration(),
+		BaseDelay:  cfg.Queue.BaseDelay,
+		MaxDelay:   cfg.Queue.MaxDelay,
 		StatePath:  cfg.Queue.StatePath,
 	})
 	if err != nil {
@@ -156,7 +156,7 @@ func (s *Service) setupWatcherAndProcessor(cfg *config.Config) error {
 		EncryptDestDir:    cfg.Encryption.DestDir,
 		DecryptSourceDir:  cfg.Decryption.SourceDir,
 		DecryptDestDir:    cfg.Decryption.DestDir,
-		StabilityDuration: cfg.Queue.StabilityDuration.Duration(),
+		StabilityDuration: cfg.Queue.StabilityDuration,
 	}, s.queue, s.log)
 	if err != nil {
 		return fmt.Errorf("failed to create watcher: %w", err)

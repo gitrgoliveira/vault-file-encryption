@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 )
 
 // Config represents the application configuration
@@ -15,10 +16,11 @@ type Config struct {
 
 // VaultConfig holds Vault-related configuration
 type VaultConfig struct {
-	AgentAddress   string   `hcl:"agent_address"`
-	TransitMount   string   `hcl:"transit_mount"`
-	KeyName        string   `hcl:"key_name"`
-	RequestTimeout Duration `hcl:"request_timeout,optional"`
+	AgentAddress      string        `hcl:"agent_address"`
+	TransitMount      string        `hcl:"transit_mount"`
+	KeyName           string        `hcl:"key_name"`
+	RequestTimeoutStr string        `hcl:"request_timeout,optional"`
+	RequestTimeout    time.Duration // Parsed from RequestTimeoutStr (no HCL tag)
 }
 
 // EncryptionConfig holds encryption-specific configuration
@@ -43,11 +45,14 @@ type DecryptionConfig struct {
 
 // QueueConfig holds queue-related configuration
 type QueueConfig struct {
-	StatePath         string   `hcl:"state_path"`
-	MaxRetries        int      `hcl:"max_retries,optional"`
-	BaseDelay         Duration `hcl:"base_delay,optional"`
-	MaxDelay          Duration `hcl:"max_delay,optional"`
-	StabilityDuration Duration `hcl:"stability_duration,optional"`
+	StatePath            string        `hcl:"state_path"`
+	MaxRetries           int           `hcl:"max_retries,optional"`
+	BaseDelayStr         string        `hcl:"base_delay,optional"`
+	MaxDelayStr          string        `hcl:"max_delay,optional"`
+	StabilityDurationStr string        `hcl:"stability_duration,optional"`
+	BaseDelay            time.Duration // Parsed from BaseDelayStr (no HCL tag)
+	MaxDelay             time.Duration // Parsed from MaxDelayStr (no HCL tag)
+	StabilityDuration    time.Duration // Parsed from StabilityDurationStr (no HCL tag)
 }
 
 // LoggingConfig holds logging configuration
@@ -61,9 +66,16 @@ type LoggingConfig struct {
 
 // SetDefaults sets default values for optional fields
 func (c *Config) SetDefaults() error {
-	// Vault defaults - validation happens in UnmarshalText
+	// Vault defaults - parse duration string if provided
+	if c.Vault.RequestTimeoutStr != "" {
+		dur, err := time.ParseDuration(c.Vault.RequestTimeoutStr)
+		if err != nil {
+			return fmt.Errorf("invalid request_timeout duration: %w", err)
+		}
+		c.Vault.RequestTimeout = dur
+	}
 	if c.Vault.RequestTimeout == 0 {
-		c.Vault.RequestTimeout = Duration(DefaultVaultTimeout)
+		c.Vault.RequestTimeout = DefaultVaultTimeout
 	}
 
 	// Encryption defaults
@@ -90,18 +102,39 @@ func (c *Config) SetDefaults() error {
 		}
 	}
 
-	// Queue defaults - validation happens in UnmarshalText
+	// Queue defaults - parse duration strings if provided
 	if c.Queue.MaxRetries == 0 {
 		c.Queue.MaxRetries = DefaultMaxRetries
 	}
+	if c.Queue.BaseDelayStr != "" {
+		dur, err := time.ParseDuration(c.Queue.BaseDelayStr)
+		if err != nil {
+			return fmt.Errorf("invalid base_delay duration: %w", err)
+		}
+		c.Queue.BaseDelay = dur
+	}
 	if c.Queue.BaseDelay == 0 {
-		c.Queue.BaseDelay = Duration(DefaultBaseDelay)
+		c.Queue.BaseDelay = DefaultBaseDelay
+	}
+	if c.Queue.MaxDelayStr != "" {
+		dur, err := time.ParseDuration(c.Queue.MaxDelayStr)
+		if err != nil {
+			return fmt.Errorf("invalid max_delay duration: %w", err)
+		}
+		c.Queue.MaxDelay = dur
 	}
 	if c.Queue.MaxDelay == 0 {
-		c.Queue.MaxDelay = Duration(DefaultMaxDelay)
+		c.Queue.MaxDelay = DefaultMaxDelay
+	}
+	if c.Queue.StabilityDurationStr != "" {
+		dur, err := time.ParseDuration(c.Queue.StabilityDurationStr)
+		if err != nil {
+			return fmt.Errorf("invalid stability_duration duration: %w", err)
+		}
+		c.Queue.StabilityDuration = dur
 	}
 	if c.Queue.StabilityDuration == 0 {
-		c.Queue.StabilityDuration = Duration(DefaultStabilityDuration)
+		c.Queue.StabilityDuration = DefaultStabilityDuration
 	}
 
 	// Logging defaults

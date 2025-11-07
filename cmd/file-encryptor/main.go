@@ -187,7 +187,7 @@ func runEncrypt(inputFile, outputFile, keyFile string, calculateChecksum bool, c
 		AgentAddress: cfg.Vault.AgentAddress,
 		TransitMount: cfg.Vault.TransitMount,
 		KeyName:      cfg.Vault.KeyName,
-		Timeout:      cfg.Vault.RequestTimeout.Duration(),
+		Timeout:      cfg.Vault.RequestTimeout,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create vault client: %w", err)
@@ -293,7 +293,7 @@ func runDecrypt(inputFile, keyFile, outputFile string, verifyChecksum bool) erro
 		AgentAddress: cfg.Vault.AgentAddress,
 		TransitMount: cfg.Vault.TransitMount,
 		KeyName:      cfg.Vault.KeyName,
-		Timeout:      cfg.Vault.RequestTimeout.Duration(),
+		Timeout:      cfg.Vault.RequestTimeout,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create vault client: %w", err)

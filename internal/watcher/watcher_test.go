@@ -326,7 +326,7 @@ func TestWatcher_UpdateConfig(t *testing.T) {
 			DestDir:   newDecryptDest,
 		},
 		Queue: config.QueueConfig{
-			StabilityDuration: config.Duration(200 * time.Millisecond),
+			StabilityDuration: 200 * time.Millisecond,
 		},
 	}
 
@@ -366,7 +366,7 @@ func TestWatcher_UpdateConfig_SameDirectory(t *testing.T) {
 			DestDir:   filepath.Join(tmpDir, "decrypt-dest"),
 		},
 		Queue: config.QueueConfig{
-			StabilityDuration: config.Duration(100 * time.Millisecond),
+			StabilityDuration: 100 * time.Millisecond,
 		},
 	}
 
@@ -398,7 +398,7 @@ func TestWatcher_UpdateConfig_InvalidDirectory(t *testing.T) {
 			DestDir:   filepath.Join(os.TempDir(), "decrypt-dest"),
 		},
 		Queue: config.QueueConfig{
-			StabilityDuration: config.Duration(100 * time.Millisecond),
+			StabilityDuration: 100 * time.Millisecond,
 		},
 	}
 

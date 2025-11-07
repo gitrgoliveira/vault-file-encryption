@@ -230,7 +230,7 @@ func TestConfigValidation(t *testing.T) {
 					AgentAddress:   "http://127.0.0.1:8200",
 					TransitMount:   "transit",
 					KeyName:        "file-encryption-key",
-					RequestTimeout: config.Duration(30 * time.Second),
+					RequestTimeout: 30 * time.Second,
 				},
 				Encryption: config.EncryptionConfig{
 					SourceDir:          t.TempDir(),
@@ -241,9 +241,9 @@ func TestConfigValidation(t *testing.T) {
 				Queue: config.QueueConfig{
 					StatePath:         filepath.Join(t.TempDir(), "queue.json"),
 					MaxRetries:        3,
-					BaseDelay:         config.Duration(1 * time.Second),
-					MaxDelay:          config.Duration(5 * time.Minute),
-					StabilityDuration: config.Duration(1 * time.Second),
+					BaseDelay:         1 * time.Second,
+					MaxDelay:          5 * time.Minute,
+					StabilityDuration: 1 * time.Second,
 				},
 				Logging: config.LoggingConfig{
 					Level:  "info",
