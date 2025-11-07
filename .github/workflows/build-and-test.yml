@@ -35,6 +35,11 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.61.0
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
       - name: Run all validation checks
         run: make validate-all
 
