@@ -198,7 +198,8 @@ func (w *Watcher) handleFileCreated(ctx context.Context, filePath string) {
 			return
 		}
 
-		// Check if corresponding .key file exists
+		// Check if corresponding .key file exists (based on original filename)
+		// example.xlsx.enc -> example.xlsx.key
 		keyPath := strings.TrimSuffix(filePath, ".enc") + ".key"
 		if _, err := os.Stat(keyPath); os.IsNotExist(err) {
 			w.logger.Error("Encrypted file without key file", "file", filePath)
@@ -230,12 +231,16 @@ func (w *Watcher) handleFileCreated(ctx context.Context, filePath string) {
 
 	// For decryption, set key path
 	if operation == model.OperationDecrypt {
+		// Key file is based on original filename: example.xlsx.enc -> example.xlsx.key
 		item.KeyPath = strings.TrimSuffix(filePath, ".enc") + ".key"
 		// Remove .enc from dest path
 		item.DestPath = strings.TrimSuffix(destPath, ".enc")
 	} else {
-		// For encryption, set key path for destination
-		item.KeyPath = destPath + ".key"
+		// For encryption, add .enc to destination and set key path based on original filename
+		item.DestPath = destPath + ".enc"
+		// Key file is based on the original source filename, stored in destination directory
+		originalName := filepath.Base(filePath)
+		item.KeyPath = filepath.Join(filepath.Dir(destPath), originalName + ".key")
 	}
 
 	// Enqueue for processing

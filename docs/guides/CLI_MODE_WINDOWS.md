@@ -39,7 +39,7 @@ Encrypts a single file using Vault Transit Engine.
 **Options:**
 - `-i, --input`: Input file to encrypt (required)
 - `-o, --output`: Output encrypted file (required)
-- `-k, --key`: Output key file (default: `<output>.key`)
+- `-k, --key`: Output key file (default: `<input>.key`)
 - `--checksum`: Calculate and save SHA256 checksum
 - `-c, --config`: Configuration file for Vault settings (default: config.hcl)
 - `-l, --log-level`: Log level
@@ -63,8 +63,8 @@ Encrypts a single file using Vault Transit Engine.
 
 **Output Files:**
 - `<output>`: Encrypted file
-- `<output>.key` or `<key>`: Encrypted data encryption key
-- `<output>.sha256`: Checksum file (if `--checksum` specified)
+- `<input>.key`: Encrypted data encryption key (named after input file)
+- `<input>.sha256`: Checksum file of original input (if `--checksum` specified)
 
 ### Decrypt Command (One-Off)
 
@@ -323,20 +323,20 @@ if (-not (Test-Path test.txt.enc)) {
 }
 Write-Host "[OK] Encrypted file created" -ForegroundColor Green
 
-if (-not (Test-Path test.txt.enc.key)) {
+if (-not (Test-Path test.txt.key)) {
     Write-Host "[ERROR] Key file not created" -ForegroundColor Red
     exit 1
 }
 Write-Host "[OK] Key file created" -ForegroundColor Green
 
-if (-not (Test-Path test.txt.enc.sha256)) {
+if (-not (Test-Path test.txt.sha256)) {
     Write-Host "[ERROR] Checksum file not created" -ForegroundColor Red
     exit 1
 }
 Write-Host "[OK] Checksum file created" -ForegroundColor Green
 
 # Test decryption
-.\file-encryptor.exe decrypt -i test.txt.enc -k test.txt.enc.key -o test-decrypted.txt --verify-checksum
+.\file-encryptor.exe decrypt -i test.txt.enc -k test.txt.key -o test-decrypted.txt --verify-checksum
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Decryption failed" -ForegroundColor Red
@@ -356,7 +356,7 @@ if ($original -eq $decrypted) {
 }
 
 # Cleanup
-Remove-Item test.txt, test.txt.enc, test.txt.enc.key, test.txt.enc.sha256, test-decrypted.txt
+Remove-Item test.txt, test.txt.enc, test.txt.key, test.txt.sha256, test-decrypted.txt
 
 Write-Host "[OK] All CLI tests passed" -ForegroundColor Green
 ```

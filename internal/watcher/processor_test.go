@@ -139,7 +139,9 @@ func TestProcessor_EncryptFile(t *testing.T) {
 	// Create queue item
 	destFile := filepath.Join(tmpDir, "encrypted.enc")
 	item := model.NewItem(model.OperationEncrypt, sourceFile, destFile)
-	item.KeyPath = destFile + ".key"
+	// Key file is based on original source filename, stored in destination directory
+	originalName := filepath.Base(sourceFile)
+	item.KeyPath = filepath.Join(filepath.Dir(destFile), originalName + ".key")
 	info, _ := os.Stat(sourceFile)
 	item.FileSize = info.Size()
 
@@ -158,10 +160,12 @@ func TestProcessor_EncryptFile(t *testing.T) {
 
 	// Verify encrypted file and key were created
 	assert.FileExists(t, destFile)
-	assert.FileExists(t, destFile+".key")
+	assert.FileExists(t, item.KeyPath)
 
-	// Verify checksum was created
-	assert.FileExists(t, destFile+".sha256")
+	// Verify checksum was created in dest dir, named after original file
+	// /tmp/encrypted.enc -> checksum at /tmp/source.txt.sha256
+	checksumFile := filepath.Join(filepath.Dir(destFile), filepath.Base(sourceFile)+".sha256")
+	assert.FileExists(t, checksumFile)
 
 	// Verify source was archived
 	archiveFile := filepath.Join(cfg.ArchiveDir, filepath.Base(sourceFile))
@@ -186,7 +190,9 @@ func TestProcessor_EncryptFile_Delete(t *testing.T) {
 	// Create queue item
 	destFile := filepath.Join(tmpDir, "encrypted.enc")
 	item := model.NewItem(model.OperationEncrypt, sourceFile, destFile)
-	item.KeyPath = destFile + ".key"
+	// Key file is based on original source filename, stored in destination directory
+	originalName := filepath.Base(sourceFile)
+	item.KeyPath = filepath.Join(filepath.Dir(destFile), originalName + ".key")
 	info, _ := os.Stat(sourceFile)
 	item.FileSize = info.Size()
 
@@ -443,7 +449,9 @@ func TestProcessor_ProcessItem_EncryptionFailure(t *testing.T) {
 	destFile := filepath.Join(tmpDir, "encrypted.enc")
 
 	item := model.NewItem(model.OperationEncrypt, sourceFile, destFile)
-	item.KeyPath = destFile + ".key"
+	// Key file is based on original source filename, stored in destination directory
+	originalName := filepath.Base(sourceFile)
+	item.KeyPath = filepath.Join(filepath.Dir(destFile), originalName + ".key")
 	item.FileSize = 0
 
 	err := q.Enqueue(item)

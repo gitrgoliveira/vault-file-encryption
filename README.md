@@ -156,7 +156,7 @@ vault agent -config=configs\vault-agent\vault-agent-enterprise-dev.hcl
 
 This creates:
 - `myfile.txt.enc` - Encrypted file
-- `myfile.txt.enc.key` - Encrypted data key
+- `myfile.txt.key` - Encrypted data key
 
 ### 5. Run Service Mode (Watch Directories)
 

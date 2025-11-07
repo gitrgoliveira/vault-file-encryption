@@ -180,7 +180,7 @@ Command: file-encryptor encrypt -i input.txt -o output.txt.enc
        │    └─── Write to specified output
        │
        ├─── Save Ciphertext DEK
-       │    └─── Write to output.key or specified path
+       │    └─── Write to input.key (based on input filename)
        │
        ├─── Zero Plaintext DEK from Memory
        │    ├─── SecureBuffer.Destroy() (automatic)
@@ -262,7 +262,7 @@ Command: file-encryptor decrypt -i input.txt.enc -k input.txt.key -o output.txt
           │    └─── Write to destination.enc
           │
           ├─── Save Ciphertext DEK
-          │    └─── Write to destination.key
+          │    └─── Write to source.key (based on original filename)
           │
           ├─── Zero Plaintext DEK from Memory
           │    ├─── SecureBuffer.Destroy() (automatic)

@@ -42,8 +42,11 @@ func (s *EncryptStrategy) Process(ctx context.Context, item *model.Item) error {
 		}
 		item.Checksum = checksum
 
-		// Save checksum
-		checksumPath := item.DestPath + ".sha256"
+		// Save checksum in DESTINATION directory, named after ORIGINAL filename
+		// Example: /source/data.txt -> /encrypted/data.txt.sha256
+		// This keeps checksum with encrypted files, not with source
+		originalName := filepath.Base(item.SourcePath)
+		checksumPath := filepath.Join(filepath.Dir(item.DestPath), originalName+".sha256")
 		if err := crypto.SaveChecksum(checksum, checksumPath); err != nil {
 			return fmt.Errorf("failed to save checksum: %w", err)
 		}
@@ -123,7 +126,13 @@ func (s *DecryptStrategy) Process(ctx context.Context, item *model.Item) error {
 
 	// Verify checksum if enabled
 	if s.verifyChecksum {
-		checksumPath := item.DestPath + ".sha256"
+		// Checksum file is based on the ORIGINAL source file that was encrypted
+		// For decryption: item.SourcePath is data.txt.enc, original was data.txt
+		// Remove .enc extension to get original filename, then add .sha256
+		originalFile := filepath.Base(item.SourcePath)
+		originalFile = originalFile[:len(originalFile)-4] // Remove ".enc"
+		checksumPath := filepath.Join(filepath.Dir(item.SourcePath), originalFile+".sha256")
+
 		if _, err := os.Stat(checksumPath); err == nil {
 			expectedChecksum, err := crypto.LoadChecksum(checksumPath)
 			if err != nil {
@@ -136,8 +145,10 @@ func (s *DecryptStrategy) Process(ctx context.Context, item *model.Item) error {
 				if !valid {
 					return fmt.Errorf("checksum verification failed")
 				}
-				s.logger.Info("Checksum verified", "file", item.DestPath)
+				s.logger.Info("Checksum verified", "file", item.DestPath, "checksum_file", checksumPath)
 			}
+		} else {
+			s.logger.Info("Checksum file not found, skipping verification", "checksum_file", checksumPath)
 		}
 	}
 

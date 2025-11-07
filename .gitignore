@@ -83,3 +83,6 @@ scripts/vault-setup-enterprise/.vault-token
 # Test output
 coverage.html
 *.log
+*.enc
+*.txt
+

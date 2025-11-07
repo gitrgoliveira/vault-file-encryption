@@ -136,7 +136,7 @@ Leave this running in a PowerShell window. The file-encryptor application will c
 ```powershell
 .\bin\file-encryptor-windows-amd64.exe decrypt `
   -i myfile.txt.enc `
-  -k myfile.txt.enc.key `
+  -k myfile.txt.key `
   -o myfile-decrypted.txt `
   -c configs\examples\example.hcl
 ```
@@ -471,7 +471,7 @@ try {
 }
 
 # Cleanup
-Remove-Item test.txt, test.enc, test.enc.key -ErrorAction SilentlyContinue
+Remove-Item test.txt, test.enc, test.key -ErrorAction SilentlyContinue
 
 Write-Host "[OK] All tests passed" -ForegroundColor Green
 ```

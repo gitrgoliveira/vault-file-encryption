@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -119,7 +120,10 @@ func TestWatcher_HandleFileCreated_EncryptOperation(t *testing.T) {
 	assert.Equal(t, model.OperationEncrypt, item.Operation)
 	assert.Equal(t, testFile, item.SourcePath)
 	assert.Contains(t, item.DestPath, "encrypt-dest")
+	assert.True(t, strings.HasSuffix(item.DestPath, ".enc"), "DestPath should end with .enc")
 	assert.Contains(t, item.KeyPath, ".key")
+	assert.True(t, strings.HasSuffix(item.KeyPath, ".key"), "KeyPath should end with .key")
+	assert.False(t, strings.Contains(item.KeyPath, ".enc.key"), "KeyPath should NOT contain .enc.key")
 }
 
 func TestWatcher_HandleFileCreated_SkipEncFiles(t *testing.T) {

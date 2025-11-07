@@ -39,7 +39,7 @@ file-encryptor encrypt -i input.txt -o output.txt.enc
 **Options:**
 - `-i, --input`: Input file to encrypt (required)
 - `-o, --output`: Output encrypted file (required)
-- `-k, --key`: Output key file (default: `<output>.key`)
+- `-k, --key`: Output key file (default: `<input>.key`)
 - `--checksum`: Calculate and save SHA256 checksum
 - `-c, --config`: Configuration file for Vault settings (default: config.hcl)
 - `-l, --log-level`: Log level
@@ -63,8 +63,8 @@ file-encryptor encrypt -i file.bin -o file.bin.enc -l debug
 
 **Output Files:**
 - `<output>`: Encrypted file
-- `<output>.key` or `<key>`: Encrypted data encryption key
-- `<output>.sha256`: Checksum file (if `--checksum` specified)
+- `<input>.key`: Encrypted data encryption key (named after input file)
+- `<input>.sha256`: Checksum file of original input (if `--checksum` specified)
 
 ### Decrypt Command (One-Off)
 
@@ -122,120 +122,6 @@ The following configuration sections are **NOT required** for CLI mode:
 - `encryption` (source/dest directories)
 - `decryption` (source/dest directories)
 - `queue` (state path, retries)
-
-## Implementation Details
-
-### CLI Flow for Encryption
-
-```go
-func runEncrypt(inputFile, outputFile, keyFile string, calculateChecksum bool) error {
-    // 1. Initialize logger
-    log := logger.New(logLevel, logOutput)
-    
-    // 2. Load configuration (Vault settings only)
-    cfg := config.Load(configFile)
-    
-    // 3. Verify input file exists
-    if _, err := os.Stat(inputFile); os.IsNotExist(err) {
-        return fmt.Errorf("input file not found: %s", inputFile)
-    }
-    
-    // 4. Set default key file if not specified
-    if keyFile == "" {
-        keyFile = outputFile + ".key"
-    }
-    
-    // 5. Initialize Vault client
-    vaultClient := vault.NewClient(cfg.Vault)
-    
-    // 6. Calculate checksum (if requested)
-    var checksum string
-    if calculateChecksum {
-        checksum = crypto.CalculateChecksum(inputFile)
-        crypto.SaveChecksum(checksum, outputFile + ".sha256")
-    }
-    
-    // 7. Encrypt file
-    encryptor := crypto.NewEncryptor(vaultClient)
-    progressCallback := func(progress float64) {
-        log.Info("Encryption progress", "percent", progress)
-    }
-    encryptedKey, err := encryptor.EncryptFile(inputFile, outputFile, progressCallback)
-    if err != nil {
-        return fmt.Errorf("encryption failed: %w", err)
-    }
-    
-    // 8. Save encrypted key
-    os.WriteFile(keyFile, []byte(encryptedKey), 0600)
-    
-    // 9. Log success
-    log.Info("File encrypted successfully",
-        "input", inputFile,
-        "output", outputFile,
-        "key", keyFile,
-    )
-    
-    return nil
-}
-```
-
-### CLI Flow for Decryption
-
-```go
-func runDecrypt(inputFile, keyFile, outputFile string, verifyChecksum bool) error {
-    // 1. Initialize logger
-    log := logger.New(logLevel, logOutput)
-    
-    // 2. Load configuration (Vault settings only)
-    cfg := config.Load(configFile)
-    
-    // 3. Verify input files exist
-    if _, err := os.Stat(inputFile); os.IsNotExist(err) {
-        return fmt.Errorf("encrypted file not found: %s", inputFile)
-    }
-    if _, err := os.Stat(keyFile); os.IsNotExist(err) {
-        return fmt.Errorf("key file not found: %s", keyFile)
-    }
-    
-    // 4. Initialize Vault client
-    vaultClient := vault.NewClient(cfg.Vault)
-    
-    // 5. Decrypt file
-    decryptor := crypto.NewDecryptor(vaultClient)
-    progressCallback := func(progress float64) {
-        log.Info("Decryption progress", "percent", progress)
-    }
-    err := decryptor.DecryptFile(inputFile, keyFile, outputFile, progressCallback)
-    if err != nil {
-        return fmt.Errorf("decryption failed: %w", err)
-    }
-    
-    // 6. Verify checksum (if requested and available)
-    if verifyChecksum {
-        checksumFile := strings.TrimSuffix(inputFile, ".enc") + ".sha256"
-        if _, err := os.Stat(checksumFile); err == nil {
-            expectedChecksum := crypto.LoadChecksum(checksumFile)
-            valid, err := crypto.VerifyChecksum(outputFile, expectedChecksum)
-            if err != nil {
-                log.Warn("Checksum verification failed", "error", err)
-            } else if !valid {
-                return fmt.Errorf("checksum verification failed")
-            }
-            log.Info("Checksum verified successfully")
-        } else {
-            log.Warn("No checksum file found, skipping verification")
-        }
-    }
-    
-    // 7. Log success
-    log.Info("File decrypted successfully",
-        "input", inputFile,
-        "output", outputFile,
-    )
-    
-    return nil
-}
-```
 
 ## Exit Codes
 
@@ -364,7 +250,7 @@ func TestEncryptCommand(t *testing.T) {
     
     // Verify outputs exist
     assert.FileExists(t, tmpFile+".enc")
-    assert.FileExists(t, tmpFile+".enc.key")
+    assert.FileExists(t, tmpFile+".key")
 }
 
 func TestDecryptCommand(t *testing.T) {
@@ -400,11 +286,11 @@ echo "[OK] Encryption successful"
 
 # Verify files exist
 [ -f test.txt.enc ] && echo "[OK] Encrypted file created"
-[ -f test.txt.enc.key ] && echo "[OK] Key file created"
-[ -f test.txt.enc.sha256 ] && echo "[OK] Checksum file created"
+[ -f test.txt.key ] && echo "[OK] Key file created"
+[ -f test.txt.sha256 ] && echo "[OK] Checksum file created"
 
 # Test decryption
-file-encryptor decrypt -i test.txt.enc -k test.txt.enc.key -o test-decrypted.txt --verify-checksum
+file-encryptor decrypt -i test.txt.enc -k test.txt.key -o test-decrypted.txt --verify-checksum
 echo "[OK] Decryption successful"
 
 # Verify content
@@ -416,7 +302,7 @@ else
 fi
 
 # Cleanup
-rm test.txt test.txt.enc test.txt.enc.key test.txt.enc.sha256 test-decrypted.txt
+rm test.txt test.txt.enc test.txt.key test.txt.sha256 test-decrypted.txt
 echo "[OK] All CLI tests passed"
 ```
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/gitrgoliveira/vault-file-encryption/internal/config"
 	"github.com/gitrgoliveira/vault-file-encryption/internal/crypto"
@@ -225,8 +226,10 @@ func runEncrypt(inputFile, outputFile, keyFile string, calculateChecksum bool, c
 	}
 
 	// Determine key file path
+	// Key file is based on input filename for consistency with watcher behavior
+	// Example: input.txt -> input.txt.enc + input.txt.key
 	if keyFile == "" {
-		keyFile = outputFile + ".key"
+		keyFile = inputFile + ".key"
 	}
 
 	// Save the encrypted data key
@@ -320,9 +323,11 @@ func runDecrypt(inputFile, keyFile, outputFile string, verifyChecksum bool) erro
 
 	// Verify checksum if requested
 	if verifyChecksum {
-		// Determine original file name from output file
-		// Assume checksum file is output + .sha256
-		checksumPath := outputFile + ".sha256"
+		// Checksum file is based on the ORIGINAL input file that was encrypted
+		// For decryption: input.enc was created from input, so checksum is input.sha256
+		// Remove .enc extension to get original filename
+		originalFile := strings.TrimSuffix(inputFile, ".enc")
+		checksumPath := originalFile + ".sha256"
 
 		// Check if checksum file exists
 		if _, err := os.Stat(checksumPath); err == nil {
