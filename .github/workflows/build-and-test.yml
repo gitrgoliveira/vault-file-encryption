@@ -35,10 +35,6 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Install golangci-lint
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.6.1
-
       - name: Run all validation checks
         run: make validate-all
 
