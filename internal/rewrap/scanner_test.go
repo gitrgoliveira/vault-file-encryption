@@ -154,7 +154,8 @@ func TestScanner_Scan(t *testing.T) {
 			for i, f := range result.Files {
 				rel, err := filepath.Rel(tt.directory, f)
 				require.NoError(t, err)
-				relativeFiles[i] = rel
+				// Normalize path separators for cross-platform compatibility
+				relativeFiles[i] = filepath.ToSlash(rel)
 			}
 
 			for _, expectedFile := range tt.expectedFiles {

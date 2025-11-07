@@ -79,6 +79,9 @@ func New(levelStr, outputPath string, opts ...LoggerOption) (Logger, error) {
 		mainHandler = slog.NewTextHandler(mainWriter, &slog.HandlerOptions{Level: level})
 	}
 
+	// Track audit file for cleanup
+	var auditFileHandle io.WriteCloser
+
 	// If audit logging is enabled, combine handlers
 	if config.auditPath != "" {
 		auditFile, err := os.OpenFile(config.auditPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600) // #nosec G304 G302 - configurable audit log path
@@ -88,6 +91,7 @@ func New(levelStr, outputPath string, opts ...LoggerOption) (Logger, error) {
 			}
 			return nil, fmt.Errorf("failed to open audit log: %w", err)
 		}
+		auditFileHandle = auditFile
 
 		// Audit logs are always JSON at INFO level
 		auditHandler := slog.NewJSONHandler(auditFile, &slog.HandlerOptions{Level: slog.LevelInfo})
@@ -95,8 +99,9 @@ func New(levelStr, outputPath string, opts ...LoggerOption) (Logger, error) {
 	}
 
 	return &slogLogger{
-		logger: slog.New(mainHandler),
-		output: mainOutput,
+		logger:    slog.New(mainHandler),
+		output:    mainOutput,
+		auditFile: auditFileHandle,
 	}, nil
 }
 
@@ -147,8 +152,9 @@ func formatFields(keysAndValues ...interface{}) string {
 
 // slogLogger implements the Logger interface using Go's standard log/slog package
 type slogLogger struct {
-	logger *slog.Logger
-	output io.WriteCloser
+	logger    *slog.Logger
+	output    io.WriteCloser
+	auditFile io.WriteCloser // Track audit file handle for proper cleanup
 }
 
 // Debug logs a debug message
@@ -168,8 +174,21 @@ func (l *slogLogger) Error(msg string, keysAndValues ...interface{}) {
 
 // Sync flushes any buffered log entries
 func (l *slogLogger) Sync() error {
-	if l.output != os.Stdout && l.output != os.Stderr {
-		return l.output.Close()
+	var err error
+
+	// Close audit file if open
+	if l.auditFile != nil {
+		if closeErr := l.auditFile.Close(); closeErr != nil {
+			err = closeErr
+		}
 	}
-	return nil
+
+	// Close main output if not stdout/stderr
+	if l.output != os.Stdout && l.output != os.Stderr {
+		if closeErr := l.output.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}
+
+	return err
 }
