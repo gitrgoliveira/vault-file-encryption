@@ -5,16 +5,105 @@
 
 This application is an MVP that watches directories for files, encrypts them using HashiCorp Vault Transit Engine with envelope encryption, and stores the encrypted files in a separate folder. Works with both **HCP Vault (cloud)** and **Vault Enterprise (self-hosted)**.
 
-## Current Status
 
-- CLI mode for encrypting/decrypting individual files
-- Service mode for continuous file monitoring and processing
-- Queue system with retry logic and persistence
-- Full HCL configuration with hot-reload (Unix/Linux/macOS)
-- Audit logging and enhanced logging framework
-- Key re-wrapping for encryption key rotation
-- Multi-platform binaries (Windows, macOS, Linux)
-- Comprehensive test coverage (369+ passing tests)
+## High-Level Overview
+
+```
+[File Watcher] ---> [FIFO Queue] ---> [Processor]
+                                     |
+                                     v
+                                [Vault Agent]
+                              (local listener)
+                                     |
+                                     v
+                              [Vault Transit]
+                              [   Engine    ]
+```
+
+### Encryption Flow
+
+1. File appears in source directory
+2. Watcher detects and queues file
+3. Processor generates data key via Vault
+4. File encrypted with AES-256-GCM using data key
+5. Data key encrypted with Vault Transit key
+6. Encrypted file and key saved to destination
+7. Original file archived or deleted
+
+### Workflow Diagram
+
+The diagram below shows both the continuous Service Mode path (through watcher + queue) and the one-off CLI Mode path (direct to processor). The processor handles both encryption and decryption via strategy pattern. Re-wrap and key version audit operations are shown separately as they only work with `.key` files.
+
+```mermaid
+flowchart TB
+  subgraph ServiceMode[Service Mode - watch]
+    SRC["Source Directory\n(plaintext for encryption\nor .enc+.key pairs for decryption)"]
+    SRC --> W[File Watcher\nfsnotify + startup scan]
+    W --> D[Stability Check\nsize settle detection]
+    D --> Q[FIFO Queue\nretries + persistence]
+  end
+
+  subgraph CLIMode[CLI Mode - one-off]
+    CLI["CLI Command\nencrypt | decrypt"]
+  end
+
+  Q --> PROC
+  CLI --> PROC
+
+  PROC[Processor\nstrategy: Encrypt or Decrypt]
+
+  PROC -->|Encryption| ENC_FLOW{Encryption Flow}
+  PROC -->|Decryption| DEC_FLOW{Decryption Flow}
+
+  ENC_FLOW -->|1. Request DEK| V1[(Vault Transit\n/datakey/plaintext)]
+  V1 -->|plaintext + ciphertext DEK| ENC_FLOW
+  ENC_FLOW -->|2. Encrypt with DEK| ENC_OUT["Output Files"]
+  ENC_OUT --> ENC_FILE["file.enc\nAES-256-GCM chunks"]
+  ENC_OUT --> KEY_FILE["file.key\nciphertext DEK"]
+  ENC_OUT -->|optional| HASH_FILE["file.sha256\nchecksum"]
+
+  DEC_FLOW -->|1. Read ciphertext DEK| KEY_FILE
+  DEC_FLOW -->|2. Decrypt DEK| V2[(Vault Transit\n/decrypt)]
+  V2 -->|plaintext DEK| DEC_FLOW
+  DEC_FLOW -->|3. Decrypt file| PLAIN["file\nplaintext"]
+
+  ENC_FILE -.->|becomes source for decryption| SRC
+  KEY_FILE -.->|paired with .enc| SRC
+
+  PROC -->|Success| CLEANUP[Post-Process\narchive or delete originals]
+
+  subgraph KeyMaint[Key Maintenance - separate operations]
+    REWRAP[rewrap command\nrotate to newer key version]
+    AUDIT[key-versions command\noffline audit, no Vault]
+  end
+
+  REWRAP -->|read| KEY_FILE
+  REWRAP -->|call| V3[(Vault Transit\n/rewrap)]
+  V3 -->|update| KEY_FILE
+  AUDIT -->|read only| KEY_FILE
+
+  classDef vault fill:#502d7f,stroke:#333,stroke-width:2px,color:#fff;
+  class V1,V2,V3 vault;
+
+  classDef files fill:#0b5d8a,stroke:#0b5d8a,stroke-width:2px,color:#fff;
+  class ENC_FILE,KEY_FILE,HASH_FILE,PLAIN files;
+
+  classDef process fill:#176c3a,stroke:#0b4a26,stroke-width:2px,color:#fff;
+  class PROC,Q,W,D,CLEANUP process;
+
+  classDef decision fill:#d97706,stroke:#92400e,stroke-width:2px,color:#fff;
+  class ENC_FLOW,DEC_FLOW decision;
+
+  classDef cli fill:#aa5a00,stroke:#6d3a00,stroke-width:2px,color:#fff;
+  class CLI,REWRAP,AUDIT cli;
+```
+
+Key points:
+- Service Mode always passes through the watcher and queue, ensuring ordering, retries, and persistence.
+- CLI Mode bypasses watcher/queue for immediate single-file processing.
+- `.key` files store only ciphertext DEKs; plaintext keys never hit disk.
+- Re-wrap updates `.key` files to newer Vault key versions without touching `.enc` data.
+- Key version auditing (`key-versions`) runs offline (no Vault calls).
 
 ## Features
 
@@ -36,8 +125,6 @@ This application is an MVP that watches directories for files, encrypts them usi
 - **CLI Mode**: One-off encryption/decryption operations
 - **Configurable Chunk Size**: Optimize encryption for file size (64KB-10MB)
 - **Key Re-wrapping**: Rotate encrypted DEKs to newer Vault key versions without re-encrypting data
-- **Security Scanning**: gosec, staticcheck, golangci-lint integration
-- **Comprehensive Testing**: 369+ tests with 82%+ coverage
 
 ## Table of Contents
 
@@ -405,25 +492,6 @@ For detailed rewrap documentation, see [REWRAP_GUIDE.md](docs/guides/REWRAP_GUID
 
 For detailed architecture documentation, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-### High-Level Overview
-
-```
-[File Watcher] ---> [FIFO Queue] ---> [Processor]
-                                     |
-                                     v
-                              [Vault Transit]
-                              [   Engine    ]
-```
-
-### Encryption Flow
-
-1. File appears in source directory
-2. Watcher detects and queues file
-3. Processor generates data key via Vault
-4. File encrypted with AES-256-GCM using data key
-5. Data key encrypted with Vault Transit key
-6. Encrypted file and key saved to destination
-7. Original file archived or deleted
 
 ## Development
 
