@@ -163,12 +163,16 @@ func (s *Service) setupWatcherAndProcessor(cfg *config.Config) error {
 	}
 
 	processor, err := watcher.NewProcessor(&watcher.ProcessorConfig{
-		SourceFileBehavior: cfg.Encryption.SourceFileBehavior,
-		ArchiveDir:         cfg.ArchiveDir("encrypt"),
-		FailedDir:          cfg.FailedDir("encrypt"),
-		DLQDir:             cfg.DLQDir("encrypt"),
-		CalculateChecksum:  cfg.Encryption.CalculateChecksum,
-		VerifyChecksum:     cfg.Decryption.VerifyChecksum,
+		EncryptSourceFileBehavior: cfg.Encryption.SourceFileBehavior,
+		EncryptArchiveDir:         cfg.ArchiveDir("encrypt"),
+		EncryptFailedDir:          cfg.FailedDir("encrypt"),
+		EncryptDLQDir:             cfg.DLQDir("encrypt"),
+		CalculateChecksum:         cfg.Encryption.CalculateChecksum,
+		DecryptSourceFileBehavior: cfg.Decryption.SourceFileBehavior,
+		DecryptArchiveDir:         cfg.ArchiveDir("decrypt"),
+		DecryptFailedDir:          cfg.FailedDir("decrypt"),
+		DecryptDLQDir:             cfg.DLQDir("decrypt"),
+		VerifyChecksum:            cfg.Decryption.VerifyChecksum,
 	}, s.queue, s.encryptor, s.decryptor, s.log)
 	if err != nil {
 		return fmt.Errorf("failed to create processor: %w", err)

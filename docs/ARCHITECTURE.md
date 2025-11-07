@@ -222,7 +222,7 @@ Command: file-encryptor decrypt -i input.txt.enc -k input.txt.key -o output.txt
 ### Service Mode - Encryption Flow
 
 ```
-1. New File Detected
+1. New File Detected (or Pre-existing File Scanned)
    ┌──────────────┐
    │ Source File  │
    │  (plaintext) │
@@ -230,7 +230,9 @@ Command: file-encryptor decrypt -i input.txt.enc -k input.txt.key -o output.txt
           │
           ▼
    ┌──────────────┐
-   │File Watcher  │ ─── Checks stability (1s no size change)
+   │File Watcher  │ ─── On startup: scans for pre-existing files
+   │              │ ─── Ongoing: watches for new files (fsnotify)
+   │              │ ─── Checks stability (1s no size change)
    └──────┬───────┘
           │
           ▼
@@ -269,21 +271,22 @@ Command: file-encryptor decrypt -i input.txt.enc -k input.txt.key -o output.txt
           │    └─── SecureZero(dek_bytes) for temp bytes
           │
           └─── Handle Source File
-               ├─── Archive: Move to .archive/
+              ├─── Archive: Move to archive/
                └─── Delete: Remove file
 ```
 
 ### Service Mode - Decryption Flow
 
 ```
-1. Encrypted File Pair Detected (.enc + .key)
+1. Encrypted File Pair Detected (or Pre-existing Pair Scanned)
    ┌──────────────┬──────────────┐
    │ File.enc     │  File.key    │
    └──────┬───────┴──────┬───────┘
           │              │
           ▼              ▼
    ┌─────────────────────────┐
-   │   File Watcher          │
+   │   File Watcher          │ ─── On startup: scans for pre-existing pairs
+   │                         │ ─── Ongoing: watches for new pairs
    └──────┬──────────────────┘
           │
           ▼

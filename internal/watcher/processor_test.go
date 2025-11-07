@@ -40,17 +40,28 @@ func (m *mockVaultClient) DecryptDataKey(ciphertext string) (*vault.DataKey, err
 }
 
 func setupTestProcessor(t *testing.T, cfg *ProcessorConfig) (*Processor, *queue.Queue, string) {
+	t.Helper()
+
 	tmpDir := t.TempDir()
 
-	// Set up directories
-	if cfg.ArchiveDir == "" {
-		cfg.ArchiveDir = filepath.Join(tmpDir, "archive")
+	// Set up default directories if not provided
+	if cfg.EncryptArchiveDir == "" {
+		cfg.EncryptArchiveDir = filepath.Join(tmpDir, "archive")
 	}
-	if cfg.FailedDir == "" {
-		cfg.FailedDir = filepath.Join(tmpDir, "failed")
+	if cfg.EncryptFailedDir == "" {
+		cfg.EncryptFailedDir = filepath.Join(tmpDir, "failed")
 	}
-	if cfg.DLQDir == "" {
-		cfg.DLQDir = filepath.Join(tmpDir, "dlq")
+	if cfg.EncryptDLQDir == "" {
+		cfg.EncryptDLQDir = filepath.Join(tmpDir, "dlq")
+	}
+	if cfg.DecryptArchiveDir == "" {
+		cfg.DecryptArchiveDir = filepath.Join(tmpDir, "decrypt-archive")
+	}
+	if cfg.DecryptFailedDir == "" {
+		cfg.DecryptFailedDir = filepath.Join(tmpDir, "decrypt-failed")
+	}
+	if cfg.DecryptDLQDir == "" {
+		cfg.DecryptDLQDir = filepath.Join(tmpDir, "decrypt-dlq")
 	}
 
 	// Create queue
@@ -81,9 +92,10 @@ func setupTestProcessor(t *testing.T, cfg *ProcessorConfig) (*Processor, *queue.
 
 func TestNewProcessor(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
-		CalculateChecksum:  true,
-		VerifyChecksum:     true,
+		EncryptSourceFileBehavior: "archive",
+		CalculateChecksum:         true,
+		DecryptSourceFileBehavior: "archive",
+		VerifyChecksum:            true,
 	}
 
 	processor, _, tmpDir := setupTestProcessor(t, cfg)
@@ -93,12 +105,15 @@ func TestNewProcessor(t *testing.T) {
 	assert.DirExists(t, filepath.Join(tmpDir, "archive"))
 	assert.DirExists(t, filepath.Join(tmpDir, "failed"))
 	assert.DirExists(t, filepath.Join(tmpDir, "dlq"))
+	assert.DirExists(t, filepath.Join(tmpDir, "decrypt-archive"))
+	assert.DirExists(t, filepath.Join(tmpDir, "decrypt-failed"))
+	assert.DirExists(t, filepath.Join(tmpDir, "decrypt-dlq"))
 }
 
 func TestProcessor_UpdateConfig(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
-		CalculateChecksum:  false,
+		EncryptSourceFileBehavior: "archive",
+		CalculateChecksum:         false,
 	}
 
 	processor, _, tmpDir := setupTestProcessor(t, cfg)
@@ -111,7 +126,8 @@ func TestProcessor_UpdateConfig(t *testing.T) {
 			CalculateChecksum:  true,
 		},
 		Decryption: &config.DecryptionConfig{
-			VerifyChecksum: true,
+			SourceFileBehavior: "delete",
+			VerifyChecksum:     true,
 		},
 	}
 
@@ -124,8 +140,8 @@ func TestProcessor_UpdateConfig(t *testing.T) {
 
 func TestProcessor_EncryptFile(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
-		CalculateChecksum:  true,
+		EncryptSourceFileBehavior: "archive",
+		CalculateChecksum:         true,
 	}
 
 	processor, q, tmpDir := setupTestProcessor(t, cfg)
@@ -168,15 +184,15 @@ func TestProcessor_EncryptFile(t *testing.T) {
 	assert.FileExists(t, checksumFile)
 
 	// Verify source was archived
-	archiveFile := filepath.Join(cfg.ArchiveDir, filepath.Base(sourceFile))
+	archiveFile := filepath.Join(cfg.EncryptArchiveDir, filepath.Base(sourceFile))
 	assert.FileExists(t, archiveFile)
 	assert.NoFileExists(t, sourceFile)
 }
 
 func TestProcessor_EncryptFile_Delete(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "delete",
-		CalculateChecksum:  false,
+		EncryptSourceFileBehavior: "delete",
+		CalculateChecksum:         false,
 	}
 
 	processor, q, tmpDir := setupTestProcessor(t, cfg)
@@ -215,9 +231,9 @@ func TestProcessor_EncryptFile_Delete(t *testing.T) {
 
 func TestProcessor_DecryptFile(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "delete",
-		CalculateChecksum:  true,
-		VerifyChecksum:     true,
+		EncryptSourceFileBehavior: "delete",
+		CalculateChecksum:         true,
+		VerifyChecksum:            true,
 	}
 
 	processor, q, tmpDir := setupTestProcessor(t, cfg)
@@ -281,7 +297,7 @@ func TestProcessor_DecryptFile(t *testing.T) {
 
 func TestProcessor_Start_ContextCancellation(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
+		EncryptSourceFileBehavior: "archive",
 	}
 
 	processor, _, _ := setupTestProcessor(t, cfg)
@@ -296,7 +312,7 @@ func TestProcessor_Start_ContextCancellation(t *testing.T) {
 
 func TestProcessor_HandleSourceFile_UnknownBehavior(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "unknown-behavior",
+		EncryptSourceFileBehavior: "unknown-behavior",
 	}
 
 	processor, _, tmpDir := setupTestProcessor(t, cfg)
@@ -315,7 +331,7 @@ func TestProcessor_HandleSourceFile_UnknownBehavior(t *testing.T) {
 
 func TestProcessor_MoveToFailed(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
+		EncryptSourceFileBehavior: "archive",
 	}
 
 	processor, _, tmpDir := setupTestProcessor(t, cfg)
@@ -329,14 +345,14 @@ func TestProcessor_MoveToFailed(t *testing.T) {
 	processor.FileHandler.MoveToFailed(sourceFile)
 
 	// Verify file was moved
-	failedFile := filepath.Join(cfg.FailedDir, filepath.Base(sourceFile))
+	failedFile := filepath.Join(cfg.EncryptFailedDir, filepath.Base(sourceFile))
 	assert.FileExists(t, failedFile)
 	assert.NoFileExists(t, sourceFile)
 }
 
 func TestProcessor_MoveToDLQ(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
+		EncryptSourceFileBehavior: "archive",
 	}
 
 	processor, _, tmpDir := setupTestProcessor(t, cfg)
@@ -352,7 +368,7 @@ func TestProcessor_MoveToDLQ(t *testing.T) {
 	processor.FileHandler.MoveToDLQ(item)
 
 	// Verify file was moved
-	dlqFile := filepath.Join(cfg.DLQDir, filepath.Base(sourceFile))
+	dlqFile := filepath.Join(cfg.EncryptDLQDir, filepath.Base(sourceFile))
 	assert.FileExists(t, dlqFile)
 	assert.NoFileExists(t, sourceFile)
 }
@@ -361,10 +377,10 @@ func TestProcessor_MoveToFailed_EmptyDir(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
-		ArchiveDir:         filepath.Join(tmpDir, "archive"),
-		FailedDir:          "", // Empty - should not move files
-		DLQDir:             filepath.Join(tmpDir, "dlq"),
+		EncryptSourceFileBehavior: "archive",
+		EncryptArchiveDir:         filepath.Join(tmpDir, "archive"),
+		EncryptFailedDir:          "", // Empty - should not move files
+		EncryptDLQDir:             filepath.Join(tmpDir, "dlq"),
 	}
 
 	processor, _, _ := setupTestProcessorWithExactConfig(t, cfg)
@@ -414,10 +430,10 @@ func TestProcessor_MoveToDLQ_EmptyDir(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
-		ArchiveDir:         filepath.Join(tmpDir, "archive"),
-		FailedDir:          filepath.Join(tmpDir, "failed"),
-		DLQDir:             "", // Empty - should not move files
+		EncryptSourceFileBehavior: "archive",
+		EncryptArchiveDir:         filepath.Join(tmpDir, "archive"),
+		EncryptFailedDir:          filepath.Join(tmpDir, "failed"),
+		EncryptDLQDir:             "", // Empty - should not move files
 	}
 
 	processor, _, _ := setupTestProcessorWithExactConfig(t, cfg)
@@ -438,8 +454,8 @@ func TestProcessor_MoveToDLQ_EmptyDir(t *testing.T) {
 
 func TestProcessor_ProcessItem_EncryptionFailure(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
-		CalculateChecksum:  false,
+		EncryptSourceFileBehavior: "archive",
+		CalculateChecksum:         false,
 	}
 
 	processor, q, tmpDir := setupTestProcessor(t, cfg)
@@ -470,9 +486,9 @@ func TestProcessor_ProcessItem_EncryptionFailure(t *testing.T) {
 
 func TestProcessor_DecryptFile_ChecksumVerificationFailure(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "delete",
-		CalculateChecksum:  true,
-		VerifyChecksum:     true,
+		EncryptSourceFileBehavior: "delete",
+		CalculateChecksum:         true,
+		VerifyChecksum:            true,
 	}
 
 	processor, q, tmpDir := setupTestProcessor(t, cfg)
@@ -532,7 +548,7 @@ func TestProcessor_DecryptFile_ChecksumVerificationFailure(t *testing.T) {
 
 func TestProcessor_ProcessItem_UnknownOperation(t *testing.T) {
 	cfg := &ProcessorConfig{
-		SourceFileBehavior: "archive",
+		EncryptSourceFileBehavior: "archive",
 	}
 
 	processor, q, tmpDir := setupTestProcessor(t, cfg)

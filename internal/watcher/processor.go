@@ -3,6 +3,8 @@ package watcher
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,22 +17,30 @@ import (
 
 // Processor processes files from the queue
 type Processor struct {
-	queue           interfaces.Queue
-	encryptStrategy ProcessStrategy
-	decryptStrategy ProcessStrategy
-	FileHandler     *FileHandler // Exposed for testing
-	logger          logger.Logger
-	mu              sync.RWMutex
+	queue              interfaces.Queue
+	encryptStrategy    ProcessStrategy
+	decryptStrategy    ProcessStrategy
+	FileHandler        *FileHandler // Exposed for testing (encryption)
+	decryptFileHandler *FileHandler // File handler for decryption
+	logger             logger.Logger
+	mu                 sync.RWMutex
 }
 
 // ProcessorConfig holds processor configuration
 type ProcessorConfig struct {
-	SourceFileBehavior string
-	ArchiveDir         string
-	FailedDir          string
-	DLQDir             string
-	CalculateChecksum  bool
-	VerifyChecksum     bool
+	// Encryption configuration
+	EncryptSourceFileBehavior string
+	EncryptArchiveDir         string
+	EncryptFailedDir          string
+	EncryptDLQDir             string
+	CalculateChecksum         bool
+
+	// Decryption configuration
+	DecryptSourceFileBehavior string
+	DecryptArchiveDir         string
+	DecryptFailedDir          string
+	DecryptDLQDir             string
+	VerifyChecksum            bool
 }
 
 // NewProcessor creates a new file processor
@@ -41,15 +51,26 @@ func NewProcessor(
 	dec *crypto.Decryptor,
 	log logger.Logger,
 ) (*Processor, error) {
-	// Create file handler
-	fileHandler, err := NewFileHandler(&FileHandlerConfig{
-		SourceFileBehavior: cfg.SourceFileBehavior,
-		ArchiveDir:         cfg.ArchiveDir,
-		FailedDir:          cfg.FailedDir,
-		DLQDir:             cfg.DLQDir,
+	// Create encryption file handler
+	encryptFileHandler, err := NewFileHandler(&FileHandlerConfig{
+		SourceFileBehavior: cfg.EncryptSourceFileBehavior,
+		ArchiveDir:         cfg.EncryptArchiveDir,
+		FailedDir:          cfg.EncryptFailedDir,
+		DLQDir:             cfg.EncryptDLQDir,
 	}, log)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create file handler: %w", err)
+		return nil, fmt.Errorf("failed to create encryption file handler: %w", err)
+	}
+
+	// Create decryption file handler
+	decryptFileHandler, err := NewFileHandler(&FileHandlerConfig{
+		SourceFileBehavior: cfg.DecryptSourceFileBehavior,
+		ArchiveDir:         cfg.DecryptArchiveDir,
+		FailedDir:          cfg.DecryptFailedDir,
+		DLQDir:             cfg.DecryptDLQDir,
+	}, log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create decryption file handler: %w", err)
 	}
 
 	// Create strategies
@@ -57,11 +78,12 @@ func NewProcessor(
 	decryptStrategy := NewDecryptStrategy(dec, log, cfg.VerifyChecksum)
 
 	return &Processor{
-		queue:           q,
-		encryptStrategy: encryptStrategy,
-		decryptStrategy: decryptStrategy,
-		FileHandler:     fileHandler,
-		logger:          log,
+		queue:              q,
+		encryptStrategy:    encryptStrategy,
+		decryptStrategy:    decryptStrategy,
+		FileHandler:        encryptFileHandler, // For encryption (backward compatibility)
+		decryptFileHandler: decryptFileHandler, // For decryption
+		logger:             log,
 	}, nil
 }
 
@@ -71,20 +93,32 @@ func (p *Processor) UpdateConfig(cfg *config.Config) {
 	defer p.mu.Unlock()
 
 	newCfg := &ProcessorConfig{
-		SourceFileBehavior: cfg.Encryption.SourceFileBehavior,
-		ArchiveDir:         cfg.ArchiveDir("encrypt"),
-		FailedDir:          cfg.FailedDir("encrypt"),
-		DLQDir:             cfg.DLQDir("encrypt"),
-		CalculateChecksum:  cfg.Encryption.CalculateChecksum,
-		VerifyChecksum:     cfg.Decryption.VerifyChecksum,
+		EncryptSourceFileBehavior: cfg.Encryption.SourceFileBehavior,
+		EncryptArchiveDir:         cfg.ArchiveDir("encrypt"),
+		EncryptFailedDir:          cfg.FailedDir("encrypt"),
+		EncryptDLQDir:             cfg.DLQDir("encrypt"),
+		CalculateChecksum:         cfg.Encryption.CalculateChecksum,
+		DecryptSourceFileBehavior: cfg.Decryption.SourceFileBehavior,
+		DecryptArchiveDir:         cfg.ArchiveDir("decrypt"),
+		DecryptFailedDir:          cfg.FailedDir("decrypt"),
+		DecryptDLQDir:             cfg.DLQDir("decrypt"),
+		VerifyChecksum:            cfg.Decryption.VerifyChecksum,
 	}
 
-	// Update file handler
+	// Update encryption file handler
 	p.FileHandler.UpdateConfig(&FileHandlerConfig{
-		SourceFileBehavior: newCfg.SourceFileBehavior,
-		ArchiveDir:         newCfg.ArchiveDir,
-		FailedDir:          newCfg.FailedDir,
-		DLQDir:             newCfg.DLQDir,
+		SourceFileBehavior: newCfg.EncryptSourceFileBehavior,
+		ArchiveDir:         newCfg.EncryptArchiveDir,
+		FailedDir:          newCfg.EncryptFailedDir,
+		DLQDir:             newCfg.EncryptDLQDir,
+	})
+
+	// Update decryption file handler
+	p.decryptFileHandler.UpdateConfig(&FileHandlerConfig{
+		SourceFileBehavior: newCfg.DecryptSourceFileBehavior,
+		ArchiveDir:         newCfg.DecryptArchiveDir,
+		FailedDir:          newCfg.DecryptFailedDir,
+		DLQDir:             newCfg.DecryptDLQDir,
 	})
 
 	// Update strategies with new configuration
@@ -144,12 +178,15 @@ func (p *Processor) processItem(ctx context.Context, item *model.Item) {
 
 	var err error
 	var strategy ProcessStrategy
+	var fileHandler *FileHandler
 
 	switch item.Operation {
 	case model.OperationEncrypt:
 		strategy = p.encryptStrategy
+		fileHandler = p.FileHandler
 	case model.OperationDecrypt:
 		strategy = p.decryptStrategy
+		fileHandler = p.decryptFileHandler
 	default:
 		err = fmt.Errorf("unknown operation: %s", item.Operation)
 	}
@@ -170,11 +207,15 @@ func (p *Processor) processItem(ctx context.Context, item *model.Item) {
 			p.logger.Error("Failed to requeue item", "id", item.ID, "error", err)
 
 			// Move to dead letter queue
-			p.FileHandler.MoveToDLQ(item)
+			if fileHandler != nil {
+				fileHandler.MoveToDLQ(item)
+			}
 		}
 
 		// Move source file to failed directory
-		p.FileHandler.MoveToFailed(item.SourcePath)
+		if fileHandler != nil {
+			fileHandler.MoveToFailed(item.SourcePath)
+		}
 
 		return
 	}
@@ -188,6 +229,22 @@ func (p *Processor) processItem(ctx context.Context, item *model.Item) {
 		"dest", item.DestPath,
 	)
 
-	// Handle source file
-	p.FileHandler.HandleSourceFile(item.SourcePath)
+	// Handle source file with the appropriate file handler
+	if fileHandler != nil {
+		fileHandler.HandleSourceFile(item.SourcePath)
+
+		// For decryption, also handle the key file and checksum file
+		if item.Operation == model.OperationDecrypt {
+			if item.KeyPath != "" {
+				fileHandler.HandleSourceFile(item.KeyPath)
+			}
+
+			// Handle checksum file if it exists (based on original filename without .enc)
+			// Example: file.txt.enc -> file.txt.sha256
+			checksumPath := strings.TrimSuffix(item.SourcePath, ".enc") + ".sha256"
+			if _, err := os.Stat(checksumPath); err == nil {
+				fileHandler.HandleSourceFile(checksumPath)
+			}
+		}
+	}
 }

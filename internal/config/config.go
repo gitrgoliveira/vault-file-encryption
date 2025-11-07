@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 )
 
@@ -156,11 +157,12 @@ func (c *Config) SetDefaults() error {
 
 // ArchiveDir returns the archive directory path for the given operation
 func (c *Config) ArchiveDir(operation string) string {
+
 	if operation == "encrypt" {
-		return c.Encryption.SourceDir + "/.archive"
+		return filepath.Join(c.Encryption.SourceDir, "archive")
 	}
 	if c.Decryption != nil {
-		return c.Decryption.SourceDir + "/.archive"
+		return filepath.Join(c.Decryption.SourceDir, "archive")
 	}
 	return ""
 }
@@ -168,10 +170,10 @@ func (c *Config) ArchiveDir(operation string) string {
 // FailedDir returns the failed directory path for the given operation
 func (c *Config) FailedDir(operation string) string {
 	if operation == "encrypt" {
-		return c.Encryption.SourceDir + "/.failed"
+		return filepath.Join(c.Encryption.SourceDir, "failed")
 	}
 	if c.Decryption != nil {
-		return c.Decryption.SourceDir + "/.failed"
+		return filepath.Join(c.Decryption.SourceDir, "failed")
 	}
 	return ""
 }
@@ -179,10 +181,10 @@ func (c *Config) FailedDir(operation string) string {
 // DLQDir returns the dead letter queue directory path for the given operation
 func (c *Config) DLQDir(operation string) string {
 	if operation == "encrypt" {
-		return c.Encryption.SourceDir + "/.dlq"
+		return filepath.Join(c.Encryption.SourceDir, "dlq")
 	}
 	if c.Decryption != nil {
-		return c.Decryption.SourceDir + "/.dlq"
+		return filepath.Join(c.Decryption.SourceDir, "dlq")
 	}
 	return ""
 }

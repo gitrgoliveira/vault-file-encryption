@@ -130,6 +130,11 @@ func (w *Watcher) Start(ctx context.Context) error {
 			return fmt.Errorf("failed to watch encrypt source dir: %w", err)
 		}
 		w.logger.Info("Watching encryption source directory", "dir", encryptSrc)
+
+		// Scan for pre-existing files in encryption source directory
+		if err := w.scanDirectory(ctx, encryptSrc, model.OperationEncrypt); err != nil {
+			w.logger.Error("Failed to scan encryption source directory", "dir", encryptSrc, "error", err)
+		}
 	}
 
 	if decryptSrc != "" {
@@ -137,6 +142,11 @@ func (w *Watcher) Start(ctx context.Context) error {
 			return fmt.Errorf("failed to watch decrypt source dir: %w", err)
 		}
 		w.logger.Info("Watching decryption source directory", "dir", decryptSrc)
+
+		// Scan for pre-existing files in decryption source directory
+		if err := w.scanDirectory(ctx, decryptSrc, model.OperationDecrypt); err != nil {
+			w.logger.Error("Failed to scan decryption source directory", "dir", decryptSrc, "error", err)
+		}
 	}
 
 	// Watch for events
@@ -201,7 +211,19 @@ func (w *Watcher) handleFileCreated(ctx context.Context, filePath string) {
 		// Check if corresponding .key file exists (based on original filename)
 		// example.xlsx.enc -> example.xlsx.key
 		keyPath := strings.TrimSuffix(filePath, ".enc") + ".key"
-		if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+
+		// Wait for key file to appear (it might be written after .enc file)
+		// This handles the race condition where fsnotify detects .enc before .key is written
+		keyExists := false
+		for i := 0; i < 10; i++ { // Try for up to 1 second
+			if _, err := os.Stat(keyPath); err == nil {
+				keyExists = true
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		if !keyExists {
 			w.logger.Error("Encrypted file without key file", "file", filePath)
 			return
 		}
@@ -255,4 +277,100 @@ func (w *Watcher) handleFileCreated(ctx context.Context, filePath string) {
 // Stop stops the watcher
 func (w *Watcher) Stop() error {
 	return w.fsWatcher.Close()
+}
+
+// scanDirectory scans a directory for pre-existing files and queues them for processing
+func (w *Watcher) scanDirectory(ctx context.Context, dir string, operation model.OperationType) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("failed to read directory: %w", err)
+	}
+
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+
+	var destDir string
+	if operation == model.OperationEncrypt {
+		destDir = w.encryptDestDir
+	} else {
+		destDir = w.decryptDestDir
+	}
+
+	filesQueued := 0
+	for _, entry := range entries {
+		// Skip directories and subdirectories (archive, failed, dlq, etc.)
+		if entry.IsDir() {
+			continue
+		}
+
+		filePath := filepath.Join(dir, entry.Name())
+
+		// Apply same filtering as handleFileCreated
+		if operation == model.OperationEncrypt {
+			// Skip .enc and .key files in encryption source
+			if strings.HasSuffix(filePath, ".enc") || strings.HasSuffix(filePath, ".key") || strings.HasSuffix(filePath, ".sha256") {
+				continue
+			}
+		} else if operation == model.OperationDecrypt {
+			// Only process .enc files for decryption
+			if !strings.HasSuffix(filePath, ".enc") {
+				continue
+			}
+
+			// Check if corresponding .key file exists
+			keyPath := strings.TrimSuffix(filePath, ".enc") + ".key"
+			if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+				w.logger.Error("Encrypted file without key file", "file", filePath)
+				continue
+			}
+		}
+
+		// Get file info
+		info, err := entry.Info()
+		if err != nil {
+			w.logger.Error("Failed to get file info", "file", filePath, "error", err)
+			continue
+		}
+
+		// Wait for file to be stable (fully uploaded) with context support
+		if err := w.detector.WaitForStability(ctx, filePath, 5*time.Minute); err != nil {
+			w.logger.Error("File did not stabilize", "file", filePath, "error", err)
+			continue
+		}
+
+		w.logger.Info("Pre-existing file found and stable", "file", filePath, "operation", operation)
+
+		// Create queue item
+		fileName := filepath.Base(filePath)
+		destPath := filepath.Join(destDir, fileName)
+
+		item := model.NewItem(operation, filePath, destPath)
+		item.FileSize = info.Size()
+
+		// For decryption, set key path
+		if operation == model.OperationDecrypt {
+			item.KeyPath = strings.TrimSuffix(filePath, ".enc") + ".key"
+			item.DestPath = strings.TrimSuffix(destPath, ".enc")
+		} else {
+			// For encryption, add .enc to destination and set key path based on original filename
+			item.DestPath = destPath + ".enc"
+			originalName := filepath.Base(filePath)
+			item.KeyPath = filepath.Join(filepath.Dir(destPath), originalName+".key")
+		}
+
+		// Enqueue for processing
+		if err := w.queue.Enqueue(item); err != nil {
+			w.logger.Error("Failed to enqueue item", "file", filePath, "error", err)
+			continue
+		}
+
+		w.logger.Info("Pre-existing file queued for processing", "file", filePath, "id", item.ID)
+		filesQueued++
+	}
+
+	if filesQueued > 0 {
+		w.logger.Info("Pre-existing files queued", "count", filesQueued, "operation", operation)
+	}
+
+	return nil
 }

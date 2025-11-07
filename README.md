@@ -171,7 +171,8 @@ This creates:
 ```
 
 The service will:
-- Monitor configured directories for new files
+- Scan and process any pre-existing files in configured directories on startup
+- Monitor configured directories for new files (using fsnotify)
 - Queue files for processing with retry logic
 - Encrypt/decrypt files automatically
 - Save queue state on shutdown

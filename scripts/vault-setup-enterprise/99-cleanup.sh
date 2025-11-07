@@ -124,7 +124,7 @@ echo ""
 
 # Step 6: Clean up test certificates (optional)
 print_step "6/8" "Cleaning up test certificates..."
-test_certs_dir="$PROJECT_ROOT/scripts/test-certs"
+test_certs_dir="$(pwd)/scripts/test-certs"
 cert_files=(
     "$test_certs_dir/ca.crt"
     "$test_certs_dir/ca-key.pem"
@@ -151,9 +151,9 @@ echo ""
 # Step 7: Clean up test data
 print_step "7/8" "Cleaning up test data..."
 test_data_dirs=(
-    "$PROJECT_ROOT/test-data/source"
-    "$PROJECT_ROOT/test-data/encrypted"
-    "$PROJECT_ROOT/test-data/decrypted"
+    "$(pwd)/test-data/source"
+    "$(pwd)/test-data/encrypted"
+    "$(pwd)/test-data/decrypted"
 )
 
 read -p "Remove test data directories? This will delete all test files. [y/N]: " -n 1 -r

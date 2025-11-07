@@ -217,8 +217,8 @@ func TestArchiveDir(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "/tmp/source/.archive", cfg.ArchiveDir("encrypt"))
-	assert.Equal(t, "/tmp/enc/.archive", cfg.ArchiveDir("decrypt"))
+	assert.Equal(t, filepath.Join("/tmp/source", "archive"), cfg.ArchiveDir("encrypt"))
+	assert.Equal(t, filepath.Join("/tmp/enc", "archive"), cfg.ArchiveDir("decrypt"))
 }
 
 func TestFailedDir(t *testing.T) {
@@ -231,8 +231,8 @@ func TestFailedDir(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "/tmp/source/.failed", cfg.FailedDir("encrypt"))
-	assert.Equal(t, "/tmp/enc/.failed", cfg.FailedDir("decrypt"))
+	assert.Equal(t, filepath.Join("/tmp/source", "failed"), cfg.FailedDir("encrypt"))
+	assert.Equal(t, filepath.Join("/tmp/enc", "failed"), cfg.FailedDir("decrypt"))
 }
 
 func TestDLQDir(t *testing.T) {
@@ -245,8 +245,8 @@ func TestDLQDir(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "/tmp/source/.dlq", cfg.DLQDir("encrypt"))
-	assert.Equal(t, "/tmp/enc/.dlq", cfg.DLQDir("decrypt"))
+	assert.Equal(t, filepath.Join("/tmp/source", "dlq"), cfg.DLQDir("encrypt"))
+	assert.Equal(t, filepath.Join("/tmp/enc", "dlq"), cfg.DLQDir("decrypt"))
 }
 
 func TestLoad(t *testing.T) {
