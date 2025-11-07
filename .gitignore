@@ -46,6 +46,7 @@ vault-agent.hcl
 *.pem
 *.key
 *.crt
+*.srl
 !scripts/test-certs/example.crt
 
 # Queue state
