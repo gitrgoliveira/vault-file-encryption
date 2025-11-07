@@ -39,11 +39,9 @@ func NewSecureBuffer(size int) (*SecureBuffer, error) {
 	data := make([]byte, size)
 
 	// Lock the buffer in memory (best effort)
-	unlock, err := LockMemory(data)
-	if err != nil {
-		// Log the error but continue - memory locking is best-effort
-		// The encryption will still work, just without the swap protection
-	}
+	// We intentionally ignore errors here as memory locking may not be available
+	// on all platforms. The encryption will still work securely without it.
+	unlock, _ := LockMemory(data)
 
 	return &SecureBuffer{
 		data:   data,
