@@ -6,7 +6,7 @@
 This application is an MVP that watches directories for files, encrypts them using HashiCorp Vault Transit Engine with envelope encryption, and stores the encrypted files in a separate folder. Works with both **HCP Vault (cloud)** and **Vault Enterprise (self-hosted)**.
 
 > [!WARNING]
-> **v2.0.0 Breaking Changes**: This version introduces a new encrypted file format using the `go-fileencrypt` library. Files encrypted with previous versions are **not compatible**. See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for upgrade instructions.
+> **v1.0.0 Breaking Changes**: This version introduces a new encrypted file format using the `go-fileencrypt` library. Files encrypted with previous versions are **not compatible**. See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for upgrade instructions.
 
 
 ## High-Level Overview
