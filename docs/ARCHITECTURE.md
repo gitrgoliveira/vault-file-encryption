@@ -449,10 +449,10 @@ Primary Key (Vault Transit)
 
 1. **Envelope Encryption**: Primary key never leaves Vault
 2. **Memory Security**: 
-   - **SecureBuffer**: Automatic memory protection for sensitive keys (locks + zeros on destroy)
+   - **SecureBuffer**: Automatic memory protection provided by `go-fileencrypt` (locks + zeros on destroy)
    - Constant-time zeroing using `crypto/subtle` (prevents compiler optimization)
    - Memory locking via `mlock` prevents key swapping to disk (Unix/Linux/macOS only)
-   - Platform-specific implementations: `memory_unix.go` (mlock) and `memory_windows.go` (no-op)
+   - Platform-specific implementations handled by the library
    - Immediate zeroing after use with `defer buf.Destroy()`
 3. **Cryptographic Protection** (via `go-fileencrypt`):
    - AES-256-GCM authenticated encryption
@@ -508,7 +508,7 @@ Notes:
 - Optional SHA-256 checksum for end-to-end verification
 
 **Memory Safety**:
-- **SecureBuffer type**: Automatic memory protection (locking + zeroing)
+- **SecureBuffer type**: Provided by `go-fileencrypt` (automatic memory protection)
 - Constant-time memory operations (prevents timing attacks)
 - Memory locking prevents keys in swap files (Unix/Linux/macOS via `mlock`)
 - Platform-specific implementations for cross-platform support
