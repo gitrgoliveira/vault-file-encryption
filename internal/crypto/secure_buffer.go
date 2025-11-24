@@ -2,6 +2,8 @@ package crypto
 
 import (
 	"fmt"
+
+	"github.com/gitrgoliveira/go-fileencrypt/secure"
 )
 
 // SecureBuffer wraps a byte slice containing sensitive data with automatic
@@ -21,8 +23,7 @@ import (
 //	// Use buf.Data() to access the underlying byte slice
 //	copy(buf.Data(), sensitiveData)
 type SecureBuffer struct {
-	data   []byte
-	unlock func()
+	data []byte
 }
 
 // NewSecureBuffer creates a new SecureBuffer with the specified size.
@@ -41,11 +42,10 @@ func NewSecureBuffer(size int) (*SecureBuffer, error) {
 	// Lock the buffer in memory (best effort)
 	// We intentionally ignore errors here as memory locking may not be available
 	// on all platforms. The encryption will still work securely without it.
-	unlock, _ := LockMemory(data)
+	_ = LockMemory(data)
 
 	return &SecureBuffer{
-		data:   data,
-		unlock: unlock,
+		data: data,
 	}, nil
 }
 
@@ -79,12 +79,9 @@ func (sb *SecureBuffer) Data() []byte {
 // This method is idempotent - calling it multiple times is safe.
 func (sb *SecureBuffer) Destroy() {
 	if sb.data != nil {
-		SecureZero(sb.data)
+		// Unlock first, then zero
+		_ = UnlockMemory(sb.data)
+		secure.Zero(sb.data)
 		sb.data = nil
-	}
-
-	if sb.unlock != nil {
-		sb.unlock()
-		sb.unlock = nil
 	}
 }

@@ -21,9 +21,11 @@ func (m *mockVaultClient) GenerateDataKey() (*vault.DataKey, error) {
 	if m.generateKeyFunc != nil {
 		return m.generateKeyFunc()
 	}
-	// Return a valid test key (256 bits = 32 bytes, base64 encoded)
+	// Return a valid test key (256 bits = 32 bytes)
+	// Base64 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" decodes to 32 bytes of zeros
+	key := make([]byte, 32)
 	return &vault.DataKey{
-		Plaintext:  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", // 32 bytes base64
+		Plaintext:  key,
 		Ciphertext: "vault:v1:test-encrypted-key",
 		KeyVersion: 1,
 	}, nil
@@ -33,8 +35,10 @@ func (m *mockVaultClient) DecryptDataKey(ciphertext string) (*vault.DataKey, err
 	if m.decryptKeyFunc != nil {
 		return m.decryptKeyFunc(ciphertext)
 	}
+	// Base64 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" decodes to 32 bytes of zeros
+	key := make([]byte, 32)
 	return &vault.DataKey{
-		Plaintext:  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+		Plaintext:  key,
 		Ciphertext: ciphertext,
 		KeyVersion: 1,
 	}, nil
@@ -127,10 +131,10 @@ func TestEncryptor_EncryptFile_EmptyFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, encryptedKey)
 
-	// Encrypted file should still have nonce
+	// Encrypted file should have content (header + salt + etc)
 	encryptedData, err := os.ReadFile(destFile)
 	require.NoError(t, err)
-	assert.GreaterOrEqual(t, len(encryptedData), GCMNonceSize)
+	assert.Greater(t, len(encryptedData), 0)
 }
 
 func TestEncryptor_EncryptFile_ContextCancellation(t *testing.T) {
@@ -153,7 +157,8 @@ func TestEncryptor_EncryptFile_ContextCancellation(t *testing.T) {
 
 	// Should get context canceled error
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, context.Canceled)
+	// go-fileencrypt might wrap the error, check string if ErrorIs fails or just check string
+	assert.Contains(t, err.Error(), "context canceled")
 }
 
 func TestEncryptor_EncryptFile_NonExistentFile(t *testing.T) {
@@ -168,7 +173,7 @@ func TestEncryptor_EncryptFile_NonExistentFile(t *testing.T) {
 	_, err := encryptor.EncryptFile(ctx, sourceFile, destFile, nil)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to open source file")
+	assert.Contains(t, err.Error(), "failed to encrypt file")
 }
 
 func TestDecryptor_DecryptFile_SmallFile(t *testing.T) {
@@ -272,7 +277,7 @@ func TestDecryptor_DecryptFile_ContextCancellation(t *testing.T) {
 	err = decryptor.DecryptFile(canceledCtx, encryptedFile, keyFile, decryptedFile, nil)
 
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, context.Canceled)
+	assert.Contains(t, err.Error(), "context canceled")
 }
 
 func TestDecryptor_DecryptFile_InvalidKeyFile(t *testing.T) {
@@ -318,8 +323,8 @@ func TestDecryptor_DecryptFile_TamperedCiphertext(t *testing.T) {
 	// Tamper with the encrypted file
 	encryptedData, err := os.ReadFile(encryptedFile)
 	require.NoError(t, err)
-	// Flip a bit somewhere in the ciphertext (after the nonce)
-	tamperIndex := GCMNonceSize + len(encryptedData)/2
+	// Flip a bit somewhere in the ciphertext (middle of file)
+	tamperIndex := len(encryptedData) / 2
 	if tamperIndex < len(encryptedData) {
 		encryptedData[tamperIndex] = ^encryptedData[tamperIndex]
 	}
@@ -330,7 +335,7 @@ func TestDecryptor_DecryptFile_TamperedCiphertext(t *testing.T) {
 
 	// Should fail with a decryption error
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to decrypt chunk")
+	assert.Contains(t, err.Error(), "authentication failed")
 }
 
 func TestDecryptor_DecryptFile_InvalidDEK(t *testing.T) {
@@ -381,21 +386,30 @@ func TestDecryptor_DecryptFile_MismatchedKey(t *testing.T) {
 			callCount++
 			if callCount == 1 {
 				// Key for file A
+				keyA := make([]byte, 32) // All zeros
 				return &vault.DataKey{
-					Plaintext:  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", // Key A
+					Plaintext:  keyA,
 					Ciphertext: "vault:v1:key-a",
 				}, nil
 			}
 			// Key for file B
+			keyB := make([]byte, 32)
+			for i := range keyB {
+				keyB[i] = 1 // All ones
+			}
 			return &vault.DataKey{
-				Plaintext:  "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=", // Key B
+				Plaintext:  keyB,
 				Ciphertext: "vault:v1:key-b",
 			}, nil
 		},
 		decryptKeyFunc: func(ciphertext string) (*vault.DataKey, error) {
 			if ciphertext == "vault:v1:key-b" {
+				keyB := make([]byte, 32)
+				for i := range keyB {
+					keyB[i] = 1 // All ones (Key B)
+				}
 				return &vault.DataKey{
-					Plaintext: "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=", // Key B
+					Plaintext: keyB,
 				}, nil
 			}
 			return nil, assert.AnError
@@ -420,57 +434,5 @@ func TestDecryptor_DecryptFile_MismatchedKey(t *testing.T) {
 
 	// Should fail because the key is wrong
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to decrypt chunk")
-}
-
-func TestBufferPoolReuse(t *testing.T) {
-	mock := &mockVaultClient{}
-	encryptor := NewEncryptor(mock, nil)
-
-	// Get a buffer
-	bufPtr1 := encryptor.bufferPool.Get().(*[]byte)
-	assert.NotNil(t, bufPtr1)
-	assert.Equal(t, DefaultChunkSize, len(*bufPtr1))
-
-	// Put it back
-	encryptor.bufferPool.Put(bufPtr1)
-
-	// Get another buffer - should be the same one
-	bufPtr2 := encryptor.bufferPool.Get().(*[]byte)
-	assert.Equal(t, bufPtr1, bufPtr2)
-}
-
-func TestIncrementNonce(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    []byte
-		expected []byte
-	}{
-		{
-			name:     "simple increment",
-			input:    []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-			expected: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-		},
-		{
-			name:     "overflow byte",
-			input:    []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255},
-			expected: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-		},
-		{
-			name:     "multiple overflow",
-			input:    []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255},
-			expected: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			nonce := make([]byte, len(tt.input))
-			copy(nonce, tt.input)
-
-			incrementNonce(nonce)
-
-			assert.Equal(t, tt.expected, nonce)
-		})
-	}
+	assert.Contains(t, err.Error(), "authentication failed")
 }

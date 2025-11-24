@@ -5,6 +5,9 @@
 
 This application is an MVP that watches directories for files, encrypts them using HashiCorp Vault Transit Engine with envelope encryption, and stores the encrypted files in a separate folder. Works with both **HCP Vault (cloud)** and **Vault Enterprise (self-hosted)**.
 
+> [!WARNING]
+> **v2.0.0 Breaking Changes**: This version introduces a new encrypted file format using the `go-fileencrypt` library. Files encrypted with previous versions are **not compatible**. See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for upgrade instructions.
+
 
 ## High-Level Overview
 
@@ -115,12 +118,12 @@ Key points:
 - **Retry Logic**: FIFO queue with exponential backoff
 - **Integrity Verification**: Optional SHA256 checksum validation
 - **Hot Reload**: Configuration changes without restart (SIGHUP on Unix)
-- **Enhanced Security**: 
+- **Enhanced Security** (via [`go-fileencrypt`](https://github.com/gitrgoliveira/go-fileencrypt)): 
   - Constant-time memory zeroing (prevents compiler optimization)
   - Memory locking (prevents key swapping to disk)
-  - Nonce overflow detection (prevents cryptographic failures)
+  - Authenticated encryption with AES-256-GCM
+  - Secure, versioned file format with magic headers and salt
   - Chunk size validation (prevents DOS attacks)
-  - File metadata authentication via GCM
 - **Cross-Platform**: Binaries for macOS, Windows, Linux (64-bit)
 - **Comprehensive Logging**: Plaintext or JSON format with audit support
 - **CLI Mode**: One-off encryption/decryption operations

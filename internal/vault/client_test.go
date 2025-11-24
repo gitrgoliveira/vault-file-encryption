@@ -104,30 +104,6 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-func TestDataKeyPlaintextBytes(t *testing.T) {
-	dk := &DataKey{
-		Plaintext:  "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=", // base64 of "abcdefghijklmnopqrstuvwxyz123456"
-		Ciphertext: "vault:v1:test",
-		KeyVersion: 1,
-	}
-
-	bytes, err := dk.PlaintextBytes()
-	require.NoError(t, err)
-	assert.Equal(t, "abcdefghijklmnopqrstuvwxyz123456", string(bytes))
-}
-
-func TestDataKeyPlaintextBytesInvalid(t *testing.T) {
-	dk := &DataKey{
-		Plaintext:  "not-valid-base64!@#$",
-		Ciphertext: "vault:v1:test",
-		KeyVersion: 1,
-	}
-
-	_, err := dk.PlaintextBytes()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to decode plaintext key")
-}
-
 func TestGenerateDataKey(t *testing.T) {
 	// Create mock Vault server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +134,7 @@ func TestGenerateDataKey(t *testing.T) {
 	dataKey, err := client.GenerateDataKey()
 	require.NoError(t, err)
 	assert.NotNil(t, dataKey)
-	assert.Equal(t, "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=", dataKey.Plaintext)
+	assert.Equal(t, []byte("abcdefghijklmnopqrstuvwxyz123456"), dataKey.Plaintext)
 	assert.Equal(t, "vault:v1:encrypted-data-key", dataKey.Ciphertext)
 	// KeyVersion might be 0 due to type casting issues in the implementation
 }
@@ -211,7 +187,7 @@ func TestDecryptDataKey(t *testing.T) {
 	dataKey, err := client.DecryptDataKey("vault:v1:encrypted-data")
 	require.NoError(t, err)
 	assert.NotNil(t, dataKey)
-	assert.Equal(t, "ZGVjcnlwdGVkLWRhdGEta2V5LXBsYWludGV4dA==", dataKey.Plaintext)
+	assert.Equal(t, []byte("decrypted-data-key-plaintext"), dataKey.Plaintext)
 	assert.Equal(t, "vault:v1:encrypted-data", dataKey.Ciphertext)
 	// KeyVersion might be 0 due to type casting issues in the implementation
 }

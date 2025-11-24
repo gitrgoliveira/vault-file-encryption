@@ -1,317 +1,210 @@
 # Vault File Encryption - AI Agent Instructions
 
-Never use unicode or special characters in code or documentation
-
 ## Project Overview
 
-Production-ready Go application that encrypts/decrypts files using HashiCorp Vault Transit Engine with envelope encryption. Operates in two modes: (1) service mode for continuous directory watching (Phase 4), and (2) CLI mode for one-off operations (Phase 3 - COMPLETE).
+This Go application provides file encryption and decryption using HashiCorp Vault Transit Engine. It operates in two modes:
+1. **CLI Mode**: For one-off encryption/decryption operations.
+2. **Service Mode**: Watches directories for files and processes them continuously.
 
-**Current Status**: Phase 5 COMPLETE (Nov 2025) - Full HCL configuration management with hot-reload, audit logging, and enhanced logging. Always check IMPLEMENTATION_PLAN.md and PHASE_*.md before making changes.
+**Key Features**:
+- Dual Vault support: HCP Vault (cloud) and Vault Enterprise (self-hosted).
+- Envelope encryption with AES-256-GCM.
+- Key re-wrapping for encryption key rotation.
+- Offline key version auditing.
+- Hot-reload configuration (Unix/Linux/macOS only).
+- Pre-existing file scanning on startup.
+- Comprehensive logging and audit support.
 
 ## Architecture Essentials
 
-### Operating Modes
-- **CLI mode** (COMPLETE - Phase 3): Direct encrypt/decrypt commands with progress logging
-- **Service mode** (COMPLETE - Phase 4): Continuous file watching with FIFO queue processing and exponential backoff retry
-- **Configuration** (COMPLETE - Phase 5): Full HCL parsing, hot-reload via SIGHUP, audit logging
+### Core Encryption Flow
+1. Request plaintext DEK from Vault Transit.
+2. Encrypt file locally with AES-256-GCM (chunked).
+3. Vault encrypts DEK.
+4. Save `.enc` (encrypted file) and `.key` (encrypted DEK).
+5. Zero DEK from memory immediately with `SecureBuffer`.
 
-### Envelope Encryption Implementation (Phase 3 Complete)
-1. Vault generates plaintext data key (DEK) via Transit Engine
-2. File encrypted locally with AES-256-GCM using DEK (chunked: 1MB per chunk)
-3. DEK encrypted by Vault, saved as `.key` file
-4. Plaintext DEK zeroed from memory with `defer SecureZero()`
-5. Output files: `file.enc` (encrypted data) + `file.key` (encrypted DEK) + `file.sha256` (optional)
+### File Naming Convention
+- Input: `example.txt`
+- Outputs:
+  - `example.txt.enc`: Encrypted file.
+  - `example.txt.key`: Encrypted DEK (named after INPUT file, not .enc file).
+  - `example.txt.sha256`: Optional checksum of plaintext.
 
-**File Format**:
-- `.enc`: [12-byte nonce][chunk1_size(4 bytes)][chunk1_ciphertext]...[chunkN_size][chunkN_ciphertext]
-- `.key`: `vault:v1:base64encodedencryptedDEK`
-- `.sha256`: `<hex-sha256-hash>`
+### Service Mode Data Flow
+1. **Startup**: Watcher scans directories for pre-existing files (both encrypt and decrypt operations).
+2. **Runtime**: File system watcher detects new files via fsnotify events.
+3. Stability check ensures file is fully written (waits for size to stabilize).
+4. File is queued for processing (FIFO queue with persistence).
+5. Processor encrypts/decrypts file using Vault.
+6. Processed files are archived to visible subdirectories (`archive/`, `failed/`, `dlq/`).
 
-**Vault Access**: 
-- **Development**: Direct HTTPS to HCP Vault with environment variables (VAULT_ADDR, VAULT_TOKEN, VAULT_NAMESPACE) - acceptable for Phase 3-5
-- **Production** (Phase 6+): Via Vault Agent listener at http://127.0.0.1:8200 with certificate auth
-
-**HCP Vault Configuration** (Phase 2 deployed via Terraform):
-- **Cluster**: `vault-cluster-primary.vault.11eab575-aee3-cf27-adc9-0242ac11000a.aws.hashicorp.cloud:8200`
-- **Namespace**: `admin/vault_crypto`
-- **Transit Mount**: `transit/`
-- **Key Name**: `file-encryption-key` (AES-256-GCM)
-- **Policy**: `file-encryptor-policy` (datakey generate/decrypt only, denies direct encrypt)
-
-### Critical Data Flow (Service Mode)
-```
-fsnotify → stability check (1s) → queue enqueue → processor dequeue
-→ request DEK from Vault → encrypt with AES-GCM → save .enc/.key
-→ zero DEK → archive/delete source → log completion
-```
+### Race Condition Handling
+When encryption creates `.enc` and `.key` files, fsnotify may fire CREATE event before `.key` exists:
+- **Solution**: Watcher polls for `.key` file existence (100ms intervals, up to 1 second) before rejecting.
+- **Location**: `internal/watcher/watcher.go:handleFileCreated()` lines ~200-220.
+- This ensures newly encrypted files are immediately detected for decryption without restart.
 
 ## Development Workflows
 
-### Vault Setup (Phase 2 - Already Deployed)
-```bash
-# Vault infrastructure is deployed via Terraform
-# To verify/modify:
-cd scripts/vault-setup
-export VAULT_ADDR="https://vault-cluster-primary.vault.11eab575-aee3-cf27-adc9-0242ac11000a.aws.hashicorp.cloud:8200"
-export VAULT_TOKEN="<from .env file>"
-export VAULT_NAMESPACE="admin/vault_crypto"
+### Build & Test
+- **Build**: `make build` (creates `bin/file-encryptor`)
+- **Build all platforms**: `make build-all` (Linux, macOS, Windows)
+- **Test**: `make test` (unit tests with race detector and coverage)
+- **Validate all**: `make validate-all` (runs fmt-check, vet, staticcheck, lint, gosec, and tests)
+- **Integration Tests**: `make test-integration` (requires Vault setup)
+- **Security scan**: `make gosec` (SAST with gosec)
+- **Coverage report**: `make coverage` (generates coverage.html)
 
-terraform plan              # Review changes
-terraform apply             # Deploy changes
-terraform output            # View deployed resources
-
-# Test data key operations:
-vault write -f transit/datakey/plaintext/file-encryption-key  # Generate DEK
-vault read transit/keys/file-encryption-key                   # Check key status
-```
-
-**Terraform State Management**:
-- State stored locally: `scripts/vault-setup/terraform.tfstate`
-- Backup: `terraform.tfstate.backup` (auto-created)
-- Both excluded from git via `.gitignore`
-- **Never commit** state files (may contain sensitive data)
-- To inspect state: `terraform show` or `terraform state list`
-- To modify deployed resources: Edit `.tf` files, then `terraform apply`
-
-**What's Deployed**:
-1. Transit Engine at `transit/` with AES-256-GCM key
-2. Certificate auth backend at `auth/cert/` with role `file-encryptor`
-3. Policy `file-encryptor-policy` (datakey generate/decrypt only)
-4. Test certificates in `scripts/test-certs/` (4096-bit RSA, 10-year validity)
-
-### Vault Agent Transition (Development → Production)
-
-**Phase 3-5 Development** (Current):
-- Use direct HTTPS to HCP Vault with token from `.env`
-- Simpler: No agent process, no mTLS setup
-- Pattern in code:
-  ```go
-  client := &http.Client{}
-  req.Header.Set("X-Vault-Token", os.Getenv("VAULT_TOKEN"))
-  req.Header.Set("X-Vault-Namespace", os.Getenv("VAULT_NAMESPACE"))
+### Running the Application
+- **CLI Mode**:
+  ```bash
+  ./bin/file-encryptor encrypt -i file.txt -o file.txt.enc -c configs/examples/example.hcl
+  ./bin/file-encryptor decrypt -i file.txt.enc -k file.txt.key -o decrypted-file.txt -c configs/examples/example.hcl
+  ```
+- **Service Mode**:
+  ```bash
+  # Start watcher (scans pre-existing files on startup)
+  ./bin/file-encryptor watch -c configs/examples/example.hcl
+  
+  # Hot-reload config (Unix/Linux/macOS only)
+  pkill -SIGHUP file-encryptor
+  ```
+- **Key Re-wrapping**:
+  ```bash
+  # Re-wrap all .key files to minimum version 2
+  ./bin/file-encryptor rewrap --dir /path/to/keys --recursive --min-version 2
+  
+  # Dry-run preview
+  ./bin/file-encryptor rewrap --dir /path/to/keys --dry-run --min-version 2
+  ```
+- **Key Version Auditing** (offline, no Vault needed):
+  ```bash
+  ./bin/file-encryptor key-versions --dir /path/to/keys --recursive
   ```
 
-**Phase 6+ Production**:
-- Deploy Vault Agent as sidecar/daemon process
-- Agent config: `configs/vault-agent.hcl` (template provided)
-- Certificate-based auto-authentication (mTLS)
-- Application connects to `http://127.0.0.1:8200` (agent listener)
-- Pattern in code:
+### Development Setup
+```bash
+# Clone and setup
+git clone https://github.com/gitrgoliveira/vault-file-encryption.git
+cd vault-file-encryption
+make deps
+
+# Local Vault Enterprise dev mode
+cd scripts/vault-setup-enterprise
+./01-start-vault-dev.sh    # Terminal 1
+./02-configure-vault.sh    # Terminal 2
+vault agent -config=../../configs/vault-agent/vault-agent-enterprise-dev.hcl  # Terminal 3
+
+# Run with dev config (relative paths from scripts/vault-setup-enterprise/)
+cd scripts/vault-setup-enterprise
+../../bin/file-encryptor watch -c ../../configs/examples/example-enterprise.hcl
+```
+
+## Project-Specific Conventions
+
+### Code Style
+- **File Naming**: Use lowercase with hyphens for directories, underscores for multi-word files.
+- **Logging**: Always use structured logging with key-value pairs.
   ```go
-  client := &http.Client{}
-  req, _ := http.NewRequest("POST", "http://127.0.0.1:8200/v1/transit/datakey/plaintext/file-encryption-key", nil)
-  // No X-Vault-Token needed - Agent handles authentication
+  log.Info("processing file", "path", filepath, "size", fileSize)
   ```
-
-**When to Transition**:
-- Development/Testing: Direct token access is fine (through Phase 5)
-- Staging/Production: **Must** use Vault Agent for:
-  - Automatic token renewal
-  - Certificate rotation
-  - Request caching (reduces Vault load)
-  - Token leakage prevention (no tokens in app config)
-
-**Agent Startup** (production):
-```bash
-vault agent -config=/etc/vault-agent/vault-agent.hcl
-# Or as systemd service, Docker sidecar, or Kubernetes init container
-```
-
-### Build & Run
-```bash
-make build              # Build for current platform
-make build-all          # Cross-compile for Linux/macOS/Windows
-
-# CLI Mode (Phase 3 - COMPLETE)
-export VAULT_ADDR="https://vault-cluster-primary.vault.11eab575-aee3-cf27-adc9-0242ac11000a.aws.hashicorp.cloud:8200"
-export VAULT_TOKEN="<from .env file>"
-export VAULT_NAMESPACE="admin/vault_crypto"
-
-./bin/file-encryptor encrypt -i file.txt -o file.enc --checksum -c configs/dev-config.hcl
-./bin/file-encryptor decrypt -i file.enc -k file.enc.key -o file-decrypted.txt -c configs/dev-config.hcl
-
-# Service Mode (Phase 4 - COMPLETE)
-./bin/file-encryptor watch -c configs/dev-config.hcl
-
-# Hot-reload configuration (Phase 5 - COMPLETE)
-kill -HUP <pid>  # Or pkill -SIGHUP file-encryptor
-```
+- **Error Handling**: Wrap errors with context.
+  ```go
+  return fmt.Errorf("operation failed: %w", err)
+  ```
+- **Path Construction**: ALWAYS use `filepath.Join()` for cross-platform compatibility.
+  ```go
+  // Good
+  archivePath := filepath.Join(cfg.SourceDir, "archive", filename)
+  
+  // Bad - breaks on Windows
+  archivePath := cfg.SourceDir + "/.archive/" + filename
+  ```
 
 ### Testing
-```bash
-make test               # Unit tests (100+ tests, all passing)
-make test-integration   # Integration tests (coming in Phase 6)
-make coverage           # Coverage report
-```
+- Use `t.TempDir()` for temporary files (auto-cleanup).
+- Mock external dependencies (e.g., Vault client) using interfaces from `internal/interfaces/`.
+- Test both small (<1MB) and large (>1MB) files for chunked operations.
+- Use table-driven tests for multiple scenarios:
+  ```go
+  tests := []struct {
+      name string
+      input string
+      want error
+  }{
+      {"valid", "test.txt", nil},
+      {"invalid", "", ErrInvalidPath},
+  }
+  ```
 
-**Test Pattern**: Tests live in `internal/*/` alongside code files (*_test.go). Use table-driven tests with `testify/assert` and `testify/require`. Integration tests will go in `test/integration/`.
+### Security Patterns
+- **SecureBuffer**: Automatic memory protection (locking + zeroing).
+  ```go
+  buf, _ := NewSecureBufferFromBytes(key)
+  defer buf.Destroy()  // ALWAYS defer - zeroes memory on scope exit
+  ```
+- **Constant-time zeroing**: Use `crypto/subtle` to prevent compiler optimization.
+- **Memory locking**: Keys locked in RAM via `mlock` (Unix/Linux/macOS only).
+- Zero plaintext keys immediately after use with `defer SecureZero(key)`.
 
-**Current Coverage** (Phase 5):
-- Config: 32 tests (parsing, validation, hot-reload)
-- Logger: 18 tests (levels, outputs, audit logging)
-- Crypto: 11 tests (encryption, decryption, checksums)
-- Queue: 16 tests (FIFO, retries, persistence)
-- Vault: 9 tests (client, data keys)
-- Watcher: 4 tests (stability detection)
+### Architecture Patterns
+- **Strategy Pattern**: `internal/watcher/strategy.go` defines `ProcessStrategy` interface.
+  - `EncryptStrategy` and `DecryptStrategy` implement file processing logic.
+  - Processor selects strategy based on `model.OperationType`.
+- **Separate FileHandlers**: Encryption and decryption use separate `FileHandler` instances.
+  - `processor.FileHandler` for encryption operations.
+  - `processor.decryptFileHandler` for decryption operations.
+  - This allows different archive directories for encrypt vs decrypt.
+- **Interface-based mocking**: All major components implement interfaces in `internal/interfaces/`.
+  - `ConfigManager`, `Logger`, `VaultClient`, `Queue`, `Watcher`, `Processor`.
+  - Tests use mocks implementing these interfaces.
 
-### Version Management
-Version info injected via ldflags in Makefile. Update via:
-- Git tags for releases: `git tag v0.2.0`
-- Version displays from `internal/version/version.go`
-- Build time and commit hash auto-populated
-
-### Environment Variables
-Development uses `.env` file (excluded from git):
-```bash
-VAULT_ADDR=https://vault-cluster-primary.vault.11eab575-aee3-cf27-adc9-0242ac11000a.aws.hashicorp.cloud:8200
-VAULT_TOKEN=<admin-token>
-VAULT_NAMESPACE=admin/vault_crypto
-```
-Application reads these for direct Vault access during Phase 3 development.
-
-## Code Conventions
-
-### Package Structure
-- `cmd/file-encryptor/main.go`: CLI entry point, Cobra commands, signal handling
-- `internal/*/`: Private packages not importable externally
-  - `config`: HCL parsing with hot-reload (Phase 5 - COMPLETE)
-  - `crypto`: Encryption/decryption (Phase 3 - COMPLETE)
-  - `vault`: Vault client (Phase 3 - COMPLETE)
-  - `watcher`: File watching (Phase 4 - COMPLETE)
-  - `queue`: FIFO queue with persistence (Phase 4 - COMPLETE)
-  - `logger`: Structured logging with audit support (Phase 5 - COMPLETE)
-  - `version`: Build metadata
-
-### Logging Pattern
-```go
-log.Info("message", "key", value, "key2", value2)  // key-value pairs
-log.Error("error message", "error", err)
-log.Debug("debug info")  // Only logs if level=debug
-```
-Always use structured logging with key-value pairs, never string concatenation.
-
-### Error Handling
-- Wrap errors with context: `fmt.Errorf("operation failed: %w", err)`
-- Return errors to caller, don't log and return
-- Use `defer` for cleanup (e.g., `defer log.Sync()`)
-- Zero sensitive data with `SecureZero()` in defer blocks
-
-### Configuration
-- Primary format: HCL (see `configs/example.hcl`)
-- Hot-reload on SIGHUP via `config.Manager` (Phase 5 - COMPLETE)
-- Validation in `config.Validate()` before use
-- Duration support: Use strings like "30s", "5m", "1h" in HCL files
-- Thread-safe access via `ConfigManager.GetConfig()` and `UpdateConfig()`
-
-## Project-Specific Patterns
-
-### Signal Handling (main.go)
-- **SIGTERM/SIGINT**: Immediate shutdown, cancel context, save queue state
-- **SIGHUP**: Hot-reload configuration via `ConfigManager.Reload()` (Phase 5 - COMPLETE)
-- Don't wait for current file to finish processing on shutdown
-
-### File Processing States
-- **Queue Item States**: pending → processing → completed/failed/dlq
-- **Source File Behaviors**: "archive" (default), "delete", or "keep"
-- **Retry Logic**: Exponential backoff with max retries (configurable)
-
-### Progress Logging
-Log file processing progress at 20% intervals when encrypting/decrypting large files. Example:
-```go
-// Log when progress >= next milestone (20%, 40%, 60%, 80%, 100%)
-if progress >= nextMilestone {
-    log.Info("Encryption progress", "file", filename, "progress", progress)
-}
-```
-
-### Partial Upload Detection
-Files must be stable (no size change) for 1 second before processing. Prevents encrypting incomplete uploads.
+## Key Files and Directories
+- `cmd/file-encryptor/`: CLI entry point.
+  - `main.go`: Command definitions (watch, encrypt, decrypt, rewrap, key-versions).
+  - `rewrap.go`: Key re-wrapping implementation.
+  - `key_versions.go`: Offline key version auditing (no Vault needed).
+- `internal/crypto/`: Encryption/decryption logic.
+  - `envelope.go`: Core encryption with chunked streaming.
+  - `memory.go`, `memory_unix.go`, `memory_windows.go`: Platform-specific memory protection.
+  - `secure_buffer.go`: Automatic key zeroing with defer pattern.
+- `internal/watcher/`: File watching and processing.
+  - `watcher.go`: fsnotify integration + pre-existing file scanning.
+  - `processor.go`: File processing orchestration with separate handlers.
+  - `strategy.go`: Strategy pattern for encrypt/decrypt operations.
+  - `filehandler.go`: Post-processing (archive/delete/move).
+- `internal/queue/`: FIFO queue with persistence and retry logic.
+- `internal/service/`: Service lifecycle management.
+- `internal/config/`: HCL configuration with hot-reload.
+- `configs/examples/`: Configuration examples for HCP and Enterprise.
+- `docs/`: Comprehensive documentation and guides.
+  - `ARCHITECTURE.md`: Detailed system architecture.
+  - `guides/CLI_MODE.md`: CLI usage (Unix/Linux/macOS).
+  - `guides/REWRAP_GUIDE.md`: Key re-wrapping documentation.
+  - `guides/CHUNK_SIZE_TUNING.md`: Performance optimization.
 
 ## Integration Points
-
-### Vault Transit Engine
-- **Endpoints**: `/v1/transit/datakey/plaintext/{key}` (generate), `/v1/transit/decrypt/{key}` (decrypt)
-- **Development**: Direct HTTPS to HCP Vault using token from .env (Phase 3)
-- **Production**: Via Vault Agent at `http://127.0.0.1:8200` (Phase 5+)
-- **Mount path**: Configurable, default "transit"
-- **Key name**: Configurable, default "file-encryption-key"
-
-### File System Watching
-- Use `fsnotify` package (Phase 4 - IMPLEMENTED)
-- Watch `source_dir` recursively
-- Filter by `file_pattern` glob if configured
-- Check file stability before queuing
-
-### Queue Persistence
-- State file: JSON format at `queue.state_path` (default: queue-state.json)
-- Atomic writes: Write to temp file, then rename
-- Load on startup, save on shutdown and periodically
-- Includes retry counts and next_retry timestamps
+- **Vault API**:
+  - Generate DEK: `POST /v1/transit/datakey/plaintext/{key}`
+  - Decrypt DEK: `POST /v1/transit/decrypt/{key}`
+  - Rewrap DEK: `POST /v1/transit/rewrap/{key}`
+- **File System**: Uses `fsnotify` for directory watching.
 
 ## Common Pitfalls
+1. **NEVER** store plaintext DEKs on disk.
+2. **ALWAYS** use `SecureBuffer` for sensitive data.
+3. **NEVER** use `.enc.key` suffix; always use `.key` based on input filename.
+4. **ALWAYS** validate chunk sizes during decryption.
+5. **NEVER** skip `defer SecureZero()` after using plaintext keys.
+6. **ALWAYS** use `filepath.Join()` for path construction (cross-platform).
+7. **Race Condition**: When checking for `.key` file after detecting `.enc`, poll with retry (100ms intervals) instead of immediate rejection.
+8. **Pre-existing Files**: `scanDirectory()` must be called on startup for both encryption and decryption sources.
+9. **Separate FileHandlers**: Use different handlers for encryption and decryption to support different archive directories.
+10. **Visible Subdirectories**: Use `archive/`, `failed/`, `dlq/` (not hidden `.archive/`, etc.).
 
-1. **DON'T** call Vault directly in production - use Vault Agent listener (dev: direct OK with token)
-2. **DON'T** store plaintext DEKs on disk - only in memory, zeroed after use with `defer SecureZero()`
-3. **DON'T** implement features ahead of phases - follow IMPLEMENTATION_PLAN.md
-4. **DON'T** use `log.Fatal()` in library code - return errors instead
-5. **DON'T** forget to increment nonce between chunks in chunked encryption
-6. **DO** check phase documents (PHASE_*.md) before implementing features
-7. **DO** use structured logging with key-value pairs
-8. **DO** validate configuration before using it
-9. **DO** test with both small files (<1MB) and large files (>1MB) to verify chunking
-10. **DO** use progress callbacks for large file operations to provide user feedback
-
-## Key Files to Reference
-
-- `ARCHITECTURE.md`: Complete system design, data flows, security model
-- `IMPLEMENTATION_PLAN.md`: Phase breakdown, timeline, dependencies
-- `PHASE_*.md`: Detailed implementation guides for each component
-- `PHASE_3_COMPLETION.md`: Phase 3 implementation summary and test results
-- `PHASE_4_COMPLETION.md`: Phase 4 implementation summary and test results
-- `PHASE_5_COMPLETION.md`: Phase 5 implementation summary and test results
-- `configs/example.hcl`: Complete configuration example with comments
-- `cmd/file-encryptor/main.go`: CLI structure, signal handling patterns, encrypt/decrypt implementations
-- `internal/config/config.go`: Configuration structs with HCL tags
-- `internal/config/loader.go`: HCL file parsing
-- `internal/config/validator.go`: Configuration validation with directory auto-creation
-- `internal/config/reload.go`: Hot-reload manager with callbacks
-- `internal/logger/logger.go`: Logging pattern reference with levels
-- `internal/logger/audit.go`: JSON-based audit logging
-- `internal/vault/client.go`: Vault client implementation patterns
-- `internal/crypto/envelope.go`: Chunked encryption/decryption implementation
-- `internal/queue/queue.go`: Thread-safe FIFO queue with exponential backoff
-- `internal/watcher/watcher.go`: File system monitoring with fsnotify
-
-## Current Implementation Status
-
-**Phase 1 Complete**: Project structure, basic CLI, dependencies, Makefile
-**Phase 2 Complete**: Vault setup, Terraform deployment, test certificates, policies
-**Phase 3 Complete**: Vault client, envelope encryption/decryption, CLI integration, unit tests
-**Phase 4 Complete**: Watcher/queue (service mode), file stability detection, retry logic, state persistence
-**Phase 5 Complete**: Config management (HCL parsing, hot-reload, enhanced logging, audit support)
-**Phase 6 Pending**: Testing/CI/CD (integration tests, GitHub Actions, deployment)
-
-When implementing new features:
-1. Check IMPLEMENTATION_PLAN.md for phase dependencies
-2. Review corresponding PHASE_*.md document
-3. Follow patterns in existing code (logger, config, version, vault, crypto)
-4. Add TODO comments for cross-phase dependencies
-5. Update tests in `test/` directory
-6. Use `defer SecureZero()` for all sensitive data (DEKs, plaintexts)
-7. Provide progress callbacks for operations that may take >1 second
-
-## Module and Imports
-
-Module name: `github.com/gitrgoliveira/vault_file_encryption`
-
-Standard import pattern:
-```go
-import (
-    "context"
-    "fmt"
-    
-    "github.com/gitrgoliveira/vault_file_encryption/internal/config"
-    "github.com/gitrgoliveira/vault_file_encryption/internal/logger"
-)
-```
-```
+## Additional Resources
+- [Architecture Guide](../docs/ARCHITECTURE.md)
+- [CLI Guide](../docs/guides/CLI_MODE.md)
+- [Rewrap Guide](../docs/guides/REWRAP_GUIDE.md)
+- [Chunk Size Tuning](../docs/guides/CHUNK_SIZE_TUNING.md)

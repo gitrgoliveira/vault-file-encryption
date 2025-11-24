@@ -38,17 +38,12 @@ func TestSecureZero_DataKeyPattern(t *testing.T) {
 	// This test simulates the pattern of getting a plaintext key, using it,
 	// and ensuring it is zeroed out.
 	key := &vault.DataKey{
-		Plaintext: "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=", // 32 bytes, not all zeros
+		Plaintext: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 32 bytes, not all zeros
 	}
 
-	// Get plaintext bytes
-	plaintextKey, err := key.PlaintextBytes()
-	require.NoError(t, err)
-	require.NotNil(t, plaintextKey)
-
 	// Copy the key to check against later
-	keyCopy := make([]byte, len(plaintextKey))
-	copy(keyCopy, plaintextKey)
+	keyCopy := make([]byte, len(key.Plaintext))
+	copy(keyCopy, key.Plaintext)
 
 	// Ensure it's not already all zeros
 	isAllZeros := true
@@ -60,20 +55,23 @@ func TestSecureZero_DataKeyPattern(t *testing.T) {
 	}
 	require.False(t, isAllZeros, "Key should not be all zeros initially")
 
-	// Defer zeroing, simulating how it's used in the encryptor/decryptor
-	defer SecureZero(plaintextKey)
-
 	// Simulate doing some work with the key...
 	// In a real scenario, this is where encryption/decryption would happen.
 
-	// After the function returns, the deferred SecureZero is called.
+	// After the function returns, the deferred Destroy is called.
 	// To test it, we can wrap this in a function.
 	func() {
-		keyBytes, _ := key.PlaintextBytes()
-		defer SecureZero(keyBytes)
+		defer key.Destroy()
 		// Dummy operation
-		_ = len(keyBytes)
+		_ = len(key.Plaintext)
 	}()
+
+	// Verify key.Plaintext is nil after Destroy
+	assert.Nil(t, key.Plaintext)
+
+	// We can't easily verify the memory was zeroed without keeping a pointer to the underlying array
+	// which is tricky in Go. But we trust secure.Zero works as tested in TestSecureZero.
+	// The main thing is that Destroy() calls secure.Zero() and sets the slice to nil.
 
 	// We can't directly check the memory of `plaintextKey` after a real defer,
 	// but we can call SecureZero directly and verify its effect.

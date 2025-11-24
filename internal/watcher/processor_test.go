@@ -23,8 +23,9 @@ type mockVaultClient struct{}
 
 func (m *mockVaultClient) GenerateDataKey() (*vault.DataKey, error) {
 	// Return a mock plaintext DEK (base64 encoded 32 bytes)
+	// Base64 "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=" decodes to "abcdefghijklmnopqrstuvwxyz123456"
 	return &vault.DataKey{
-		Plaintext:  "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=",
+		Plaintext:  []byte("abcdefghijklmnopqrstuvwxyz123456"),
 		Ciphertext: "vault:v1:mock-encrypted-dek",
 		KeyVersion: 1,
 	}, nil
@@ -33,7 +34,7 @@ func (m *mockVaultClient) GenerateDataKey() (*vault.DataKey, error) {
 func (m *mockVaultClient) DecryptDataKey(ciphertext string) (*vault.DataKey, error) {
 	// Return the same mock plaintext DEK
 	return &vault.DataKey{
-		Plaintext:  "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=",
+		Plaintext:  []byte("abcdefghijklmnopqrstuvwxyz123456"),
 		Ciphertext: ciphertext,
 		KeyVersion: 1,
 	}, nil

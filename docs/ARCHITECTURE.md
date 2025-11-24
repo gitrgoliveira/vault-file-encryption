@@ -454,15 +454,14 @@ Primary Key (Vault Transit)
    - Memory locking via `mlock` prevents key swapping to disk (Unix/Linux/macOS only)
    - Platform-specific implementations: `memory_unix.go` (mlock) and `memory_windows.go` (no-op)
    - Immediate zeroing after use with `defer buf.Destroy()`
-3. **Cryptographic Protection**:
+3. **Cryptographic Protection** (via `go-fileencrypt`):
    - AES-256-GCM authenticated encryption
-   - Unique nonce per chunk (base nonce + counter)
+   - Secure, versioned file format with magic headers and salt
+   - Unique nonce per chunk (managed by library)
    - File metadata authenticated via GCM additional data
-   - Nonce overflow detection (max 2^32 chunks ≈ 4 petabytes)
 4. **DOS Prevention**:
-   - Maximum chunk size validation (10MB)
-   - Maximum file size enforcement
-   - Chunk size sanity checks during decryption
+   - Chunk size validation (prevents memory exhaustion)
+   - Streaming processing (low memory footprint)
 5. **In-Transit Protection**: Files encrypted before storage
 6. **Audit Logging**: All operations logged
 7. **Certificate Auth**: Mutual TLS with Vault (Enterprise)
@@ -476,26 +475,24 @@ Primary Key (Vault Transit)
 │                   Encrypted File Structure                       │
 └─────────────────────────────────────────────────────────────────┘
 
-.enc File:
-┌──────────────┬───────────────┬─────────────┬──────────────┬─────┐
-│ Master Nonce │ File Size     │ Chunk1 Size │ Chunk1       │ ... │
-│ (12 bytes)   │ (8 bytes)     │ (4 bytes LE)│ (ciphertext) │     │
-└──────────────┴───────────────┴─────────────┴──────────────┴─────┘
-     │              │                │              │
-     │              │                │              └─ Encrypted with AES-256-GCM
-     │              │                └──────────────── Big-endian uint32
-     │              └───────────────────────────────── Authenticated via GCM AAD
-     └──────────────────────────────────────────────── Incremented per chunk
+.enc File (Managed by `go-fileencrypt`):
+┌──────────────┬─────────┬──────────────┬──────────────┬─────┐
+│ Magic Header │ Version │ Salt         │ Chunk1       │ ... │
+│ (4 bytes)    │ (1 byte)│ (32 bytes)   │ (ciphertext) │     │
+└──────────────┴─────────┴──────────────┴──────────────┴─────┘
+     │              │           │              │
+     │              │           │              └─ Encrypted with AES-256-GCM
+     │              │           └──────────────── Argon2id/PBKDF2 salt (unused for Vault keys)
+     │              └──────────────────────────── Format version (v1)
+     └─────────────────────────────────────────── File signature
 
 .key File:
 vault:v{version}:{base64-encrypted-DEK}
 
 Notes:
-- Each chunk uses nonce = master_nonce + chunk_index
-- File size is included in GCM additional authenticated data
-- Maximum chunks per file: 2^32 (prevents nonce overflow)
-- Maximum chunk size: 10MB (prevents memory exhaustion)
-- Default chunk size: 1MB (configurable 64KB-10MB)
+- File format is opaque and managed by `go-fileencrypt` library
+- Ensures forward compatibility and secure defaults
+- Default chunk size: 1MB (configurable)
 ```
 
 ### Security Guarantees

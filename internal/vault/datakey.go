@@ -3,12 +3,15 @@ package vault
 import (
 	"encoding/base64"
 	"fmt"
+
+	"github.com/gitrgoliveira/go-fileencrypt/secure"
 )
 
 // DataKey represents a Vault Transit data key
 type DataKey struct {
-	// Plaintext is the plaintext data key (base64 encoded)
-	Plaintext string
+	// Plaintext is the plaintext data key
+	// It is stored as bytes to allow secure zeroing
+	Plaintext []byte
 
 	// Ciphertext is the encrypted data key
 	Ciphertext string
@@ -17,13 +20,12 @@ type DataKey struct {
 	KeyVersion int
 }
 
-// PlaintextBytes decodes and returns the plaintext key as bytes
-func (dk *DataKey) PlaintextBytes() ([]byte, error) {
-	data, err := base64.StdEncoding.DecodeString(dk.Plaintext)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode plaintext key: %w", err)
+// Destroy securely zeros the plaintext key from memory
+func (dk *DataKey) Destroy() {
+	if dk.Plaintext != nil {
+		secure.Zero(dk.Plaintext)
+		dk.Plaintext = nil
 	}
-	return data, nil
 }
 
 // GenerateDataKey generates a new data encryption key from Vault Transit
@@ -41,7 +43,7 @@ func (c *Client) GenerateDataKey() (*DataKey, error) {
 	}
 
 	// Extract plaintext and ciphertext
-	plaintext, ok := secret.Data["plaintext"].(string)
+	plaintextBase64, ok := secret.Data["plaintext"].(string)
 	if !ok {
 		return nil, fmt.Errorf("plaintext not found in response")
 	}
@@ -52,6 +54,12 @@ func (c *Client) GenerateDataKey() (*DataKey, error) {
 	}
 
 	keyVersion, _ := secret.Data["key_version"].(int)
+
+	// Decode plaintext immediately
+	plaintext, err := base64.StdEncoding.DecodeString(plaintextBase64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode plaintext key: %w", err)
+	}
 
 	return &DataKey{
 		Plaintext:  plaintext,
@@ -80,12 +88,18 @@ func (c *Client) DecryptDataKey(ciphertext string) (*DataKey, error) {
 	}
 
 	// Extract plaintext
-	plaintext, ok := secret.Data["plaintext"].(string)
+	plaintextBase64, ok := secret.Data["plaintext"].(string)
 	if !ok {
 		return nil, fmt.Errorf("plaintext not found in response")
 	}
 
 	keyVersion, _ := secret.Data["key_version"].(int)
+
+	// Decode plaintext immediately
+	plaintext, err := base64.StdEncoding.DecodeString(plaintextBase64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode plaintext key: %w", err)
+	}
 
 	return &DataKey{
 		Plaintext:  plaintext,
