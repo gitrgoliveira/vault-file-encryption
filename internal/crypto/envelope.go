@@ -58,7 +58,6 @@ func (e *Encryptor) EncryptFile(ctx context.Context, sourcePath, destPath string
 	defer dataKey.Destroy()
 
 	// Encrypt the file using the plaintext key
-	// go-fileencrypt handles the nonce generation and file format
 	var opts []fileencrypt.Option
 	if e.config.ChunkSize != 0 {
 		opt, err := fileencrypt.WithChunkSize(e.config.ChunkSize)

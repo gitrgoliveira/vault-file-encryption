@@ -193,7 +193,7 @@ func runRewrap(keyFile, directory string, recursive, dryRun bool, minVersion int
 			return fmt.Errorf("failed to write CSV output: %w", err)
 		}
 	default: // text
-		// Include detailed file list for text format
+		// Text format includes detailed file list
 		if err := reporter.WriteText(os.Stdout, true); err != nil {
 			return fmt.Errorf("failed to write text output: %w", err)
 		}

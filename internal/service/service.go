@@ -247,7 +247,7 @@ func (s *Service) Run(ctx context.Context, sigChan <-chan os.Signal, isReloadSig
 					s.log.Error("Failed to reload configuration", "error", err)
 					continue
 				}
-				// Callback will be triggered automatically
+				// Reload callback triggered automatically
 			} else if isShutdownSignal(sig) {
 				s.log.Info("Received shutdown signal, gracefully shutting down")
 				return s.Shutdown()

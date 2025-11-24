@@ -9,8 +9,7 @@ import (
 
 // DataKey represents a Vault Transit data key
 type DataKey struct {
-	// Plaintext is the plaintext data key
-	// It is stored as bytes to allow secure zeroing
+	// Plaintext data key (stored as bytes for secure zeroing)
 	Plaintext []byte
 
 	// Ciphertext is the encrypted data key

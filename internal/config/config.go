@@ -21,7 +21,7 @@ type VaultConfig struct {
 	TransitMount      string        `hcl:"transit_mount"`
 	KeyName           string        `hcl:"key_name"`
 	RequestTimeoutStr string        `hcl:"request_timeout,optional"`
-	RequestTimeout    time.Duration // Parsed from RequestTimeoutStr (no HCL tag)
+	RequestTimeout    time.Duration // Parsed from RequestTimeoutStr
 }
 
 // EncryptionConfig holds encryption-specific configuration
@@ -51,9 +51,9 @@ type QueueConfig struct {
 	BaseDelayStr         string        `hcl:"base_delay,optional"`
 	MaxDelayStr          string        `hcl:"max_delay,optional"`
 	StabilityDurationStr string        `hcl:"stability_duration,optional"`
-	BaseDelay            time.Duration // Parsed from BaseDelayStr (no HCL tag)
-	MaxDelay             time.Duration // Parsed from MaxDelayStr (no HCL tag)
-	StabilityDuration    time.Duration // Parsed from StabilityDurationStr (no HCL tag)
+	BaseDelay            time.Duration // Parsed from BaseDelayStr
+	MaxDelay             time.Duration // Parsed from MaxDelayStr
+	StabilityDuration    time.Duration // Parsed from StabilityDurationStr
 }
 
 // LoggingConfig holds logging configuration

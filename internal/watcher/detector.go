@@ -68,7 +68,7 @@ func (d *PartialUploadDetector) WaitForStability(ctx context.Context, filePath s
 			return nil
 		}
 
-		// Sleep between retry attempts to avoid CPU spinning
+		// Sleep between retries
 		time.Sleep(d.stabilityDuration)
 
 		// Check if we've exceeded max wait time

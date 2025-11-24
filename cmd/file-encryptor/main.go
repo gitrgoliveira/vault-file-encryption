@@ -225,9 +225,7 @@ func runEncrypt(inputFile, outputFile, keyFile string, calculateChecksum bool, c
 		return fmt.Errorf("encryption failed: %w", err)
 	}
 
-	// Determine key file path
-	// Key file is based on input filename for consistency with watcher behavior
-	// Example: input.txt -> input.txt.enc + input.txt.key
+	// Determine key file path (defaults to input filename + .key for consistency)
 	if keyFile == "" {
 		keyFile = inputFile + ".key"
 	}
@@ -323,9 +321,7 @@ func runDecrypt(inputFile, keyFile, outputFile string, verifyChecksum bool) erro
 
 	// Verify checksum if requested
 	if verifyChecksum {
-		// Checksum file is based on the ORIGINAL input file that was encrypted
-		// For decryption: input.enc was created from input, so checksum is input.sha256
-		// Remove .enc extension to get original filename
+		// Derive checksum path from original filename (remove .enc extension)
 		originalFile := strings.TrimSuffix(inputFile, ".enc")
 		checksumPath := originalFile + ".sha256"
 

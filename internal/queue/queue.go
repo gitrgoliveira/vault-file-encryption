@@ -197,20 +197,19 @@ func (q *Queue) calculateBackoff(attempts int) time.Duration {
 		return q.baseDelay
 	}
 
-	// Create an exponential backoff instance with deterministic behavior (no jitter)
+	// Create exponential backoff with deterministic behavior
 	b := &backoff.ExponentialBackOff{
 		InitialInterval:     q.baseDelay,
-		RandomizationFactor: 0, // No jitter for predictable delays
-		Multiplier:          2, // Double each time
+		RandomizationFactor: 0,
+		Multiplier:          2,
 		MaxInterval:         q.maxDelay,
-		MaxElapsedTime:      0, // No time limit, we handle max retries separately
+		MaxElapsedTime:      0, // Max retries handled separately
 		Stop:                backoff.Stop,
 		Clock:               backoff.SystemClock,
 	}
 	b.Reset()
 
-	// NextBackOff() returns the NEXT delay, so we need to call it 'attempts+1' times
-	// to get the delay for the current attempt number
+	// Call NextBackOff() attempts+1 times to get delay for current attempt
 	var delay time.Duration
 	for i := 0; i <= attempts; i++ {
 		delay = b.NextBackOff()

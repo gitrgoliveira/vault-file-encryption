@@ -92,7 +92,7 @@ func (r *Rewrapper) RewrapFile(ctx context.Context, keyFilePath string) (*vault.
 		"old_version", info.Version,
 		"min_version", r.options.MinVersion)
 
-	// Dry run - don't modify files
+	// Skip file modification in dry-run mode
 	if r.options.DryRun {
 		r.options.Logger.Info("dry-run mode: skipping file modification", "file", keyFilePath)
 		return result, nil

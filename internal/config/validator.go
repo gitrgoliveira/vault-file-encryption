@@ -99,8 +99,8 @@ func validateEncryptionSourceFileBehavior(c *Config) error {
 
 func validateEncryptionChunkSize(c *Config) error {
 	const (
-		minChunkSize = 64 * 1000        // 64KB in SI units (humanize uses base 1000)
-		maxChunkSize = 10 * 1000 * 1000 // 10MB in SI units
+		minChunkSize = 64 * 1000        // 64KB (SI units)
+		maxChunkSize = 10 * 1000 * 1000 // 10MB (SI units)
 	)
 
 	if c.Encryption.ChunkSize < minChunkSize {
@@ -111,7 +111,7 @@ func validateEncryptionChunkSize(c *Config) error {
 		return fmt.Errorf("encryption config: chunk_size must be <= 10MB, got %s", FormatSize(c.Encryption.ChunkSize))
 	}
 
-	// Check if it's at least 4KB (AES block alignment consideration)
+	// Ensure minimum 4KB for AES block alignment
 	if c.Encryption.ChunkSize < 4096 {
 		return fmt.Errorf("encryption config: chunk_size must be >= 4KB for AES alignment, got %s", FormatSize(c.Encryption.ChunkSize))
 	}

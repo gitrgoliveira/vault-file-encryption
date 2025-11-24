@@ -81,8 +81,8 @@ func NewProcessor(
 		queue:              q,
 		encryptStrategy:    encryptStrategy,
 		decryptStrategy:    decryptStrategy,
-		FileHandler:        encryptFileHandler, // For encryption (backward compatibility)
-		decryptFileHandler: decryptFileHandler, // For decryption
+		FileHandler:        encryptFileHandler,
+		decryptFileHandler: decryptFileHandler,
 		logger:             log,
 	}, nil
 }
@@ -239,8 +239,7 @@ func (p *Processor) processItem(ctx context.Context, item *model.Item) {
 				fileHandler.HandleSourceFile(item.KeyPath)
 			}
 
-			// Handle checksum file if it exists (based on original filename without .enc)
-			// Example: file.txt.enc -> file.txt.sha256
+			// Handle checksum file if it exists (original filename + .sha256)
 			checksumPath := strings.TrimSuffix(item.SourcePath, ".enc") + ".sha256"
 			if _, err := os.Stat(checksumPath); err == nil {
 				fileHandler.HandleSourceFile(checksumPath)

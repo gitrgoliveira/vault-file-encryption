@@ -53,11 +53,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	vaultConfig := api.DefaultConfig()
 	vaultConfig.Address = cfg.AgentAddress
 
-	// The Vault SDK's DefaultConfig() already provides a production-ready HTTP client with:
-	// - Connection pooling (via cleanhttp.DefaultPooledClient)
-	// - 60s timeout, 10s TLS handshake timeout
-	// - HTTP/2 support, TLS 1.2+ minimum
-	// - Built-in retry logic with exponential backoff
+	// Vault SDK provides production-ready defaults (pooling, retry, TLS 1.2+, 60s timeout)
 	// Override timeout if different from default
 	if cfg.Timeout > 0 && cfg.Timeout != 60*time.Second {
 		vaultConfig.Timeout = cfg.Timeout
