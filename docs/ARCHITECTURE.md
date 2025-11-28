@@ -707,7 +707,7 @@ Localhost
 
 ### Why Vault Agent?
 
-- **Authentication**: Automatic auth (token for HCP, cert for Enterprise)
+- **Authentication**: Automatic auth
 - **Caching**: Reduced latency and load on Vault
 - **Token Management**: Auto-renewal
 - **Resilience**: Local proxy for Vault
