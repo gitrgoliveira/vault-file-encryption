@@ -387,10 +387,10 @@ Source Directory (Encryption)
 /data/source/
 ├── file1.txt          ← New files dropped here
 ├── file2.pdf
-└── .archive/          ← Archived originals (configurable)
-    ├── file0.txt
-    └── .failed/       ← Failed files
-        └── .dlq/      ← Dead letter queue
+├── archive/           ← Archived originals (configurable)
+│   └── file0.txt
+├── failed/            ← Failed files
+└── dlq/               ← Dead letter queue
 
 Destination Directory (Encryption)
 /data/encrypted/
@@ -403,7 +403,7 @@ Destination Directory (Encryption)
 
 Source Directory (Decryption)
 /data/encrypted/       ← Watch for .enc + .key pairs
-└── .archive/          ← Archived encrypted files
+└── archive/           ← Archived encrypted files
 
 Destination Directory (Decryption)
 /data/decrypted/
