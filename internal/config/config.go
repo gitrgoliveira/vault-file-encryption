@@ -22,6 +22,70 @@ type VaultConfig struct {
 	KeyName           string        `hcl:"key_name"`
 	RequestTimeoutStr string        `hcl:"request_timeout,optional"`
 	RequestTimeout    time.Duration // Parsed from RequestTimeoutStr
+	Auth              *AuthConfig   `hcl:"auth,block"`
+}
+
+type AuthConfig struct {
+	Method     string                `hcl:"method"` // token, approle, aws, gcp, azure, kubernetes, jwt, cert, agent
+	Token      *TokenAuthConfig      `hcl:"token,block"`
+	AppRole    *AppRoleAuthConfig    `hcl:"approle,block"`
+	Kubernetes *KubernetesAuthConfig `hcl:"kubernetes,block"`
+	JWT        *JWTAuthConfig        `hcl:"jwt,block"`
+	Cert       *CertAuthConfig       `hcl:"cert,block"`
+}
+
+type TokenAuthConfig struct {
+	Token string `hcl:"token"` // Env: VAULT_TOKEN
+}
+
+type AppRoleAuthConfig struct {
+	RoleID    string `hcl:"role_id"`   // Env: VAULT_ROLE_ID
+	SecretID  string `hcl:"secret_id"` // Env: VAULT_SECRET_ID
+	MountPath string `hcl:"mount_path,optional"`
+}
+
+type KubernetesAuthConfig struct {
+	Role      string `hcl:"role"`
+	TokenPath string `hcl:"token_path,optional"`
+	MountPath string `hcl:"mount_path,optional"`
+}
+
+type JWTAuthConfig struct {
+	Role      string `hcl:"role"`
+	Path      string `hcl:"path"`
+	MountPath string `hcl:"mount_path,optional"`
+}
+
+type CertAuthConfig struct {
+	ClientCert string `hcl:"client_cert"`
+	ClientKey  string `hcl:"client_key"`
+	MountPath  string `hcl:"mount_path,optional"`
+	Name       string `hcl:"name,optional"`
+}
+
+// Validate checks if the configuration is valid
+func (c *AuthConfig) Validate() error {
+	var configuredMethods []string
+	if c.Token != nil {
+		configuredMethods = append(configuredMethods, "token")
+	}
+	if c.AppRole != nil {
+		configuredMethods = append(configuredMethods, "approle")
+	}
+	if c.Kubernetes != nil {
+		configuredMethods = append(configuredMethods, "kubernetes")
+	}
+	if c.JWT != nil {
+		configuredMethods = append(configuredMethods, "jwt")
+	}
+	if c.Cert != nil {
+		configuredMethods = append(configuredMethods, "cert")
+	}
+
+	if len(configuredMethods) > 1 {
+		return fmt.Errorf("multiple authentication methods configured: %v", configuredMethods)
+	}
+	return nil
 }
 
 // EncryptionConfig holds encryption-specific configuration
@@ -77,6 +141,12 @@ func (c *Config) SetDefaults() error {
 	}
 	if c.Vault.RequestTimeout == 0 {
 		c.Vault.RequestTimeout = DefaultVaultTimeout
+	}
+
+	if c.Vault.Auth != nil {
+		if err := c.Vault.Auth.Validate(); err != nil {
+			return fmt.Errorf("invalid auth configuration: %w", err)
+		}
 	}
 
 	// Encryption defaults

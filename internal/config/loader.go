@@ -28,7 +28,7 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-// LoadFromString loads configuration from an HCL string (useful for testing)
+// LoadFromString loads configuration from an HCL string
 func LoadFromString(filename, content string) (*Config, error) {
 	var cfg Config
 	if err := hclsimple.Decode(filename, []byte(content), nil, &cfg); err != nil {

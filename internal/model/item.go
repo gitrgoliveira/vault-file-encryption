@@ -32,7 +32,7 @@ type Item struct {
 	// ID is a unique identifier for this item
 	ID string `json:"id"`
 
-	// Operation is the type of operation (encrypt/decrypt)
+	// Operation type: encrypt or decrypt
 	Operation OperationType `json:"operation"`
 
 	// SourcePath is the path to the source file
@@ -41,10 +41,10 @@ type Item struct {
 	// DestPath is the path where the processed file should be saved
 	DestPath string `json:"dest_path"`
 
-	// KeyPath is the path for the encryption key file (for encrypted files)
+	// KeyPath for the encryption key file
 	KeyPath string `json:"key_path,omitempty"`
 
-	// ChecksumPath is the path for the checksum file (optional)
+	// ChecksumPath for the checksum file
 	ChecksumPath string `json:"checksum_path,omitempty"`
 
 	// Status is the current status of this item
@@ -56,10 +56,10 @@ type Item struct {
 	// LastAttempt is the timestamp of the last processing attempt
 	LastAttempt time.Time `json:"last_attempt"`
 
-	// NextRetry is when the next retry should occur (for failed items)
+	// NextRetry is when the next retry should occur
 	NextRetry time.Time `json:"next_retry,omitempty"`
 
-	// Error is the last error message (if failed)
+	// Error is the last error message
 	Error string `json:"error,omitempty"`
 
 	// CreatedAt is when this item was created
@@ -71,7 +71,7 @@ type Item struct {
 	// FileSize is the size of the source file in bytes
 	FileSize int64 `json:"file_size"`
 
-	// Checksum is the original file checksum (optional)
+	// Checksum is the original file checksum
 	Checksum string `json:"checksum,omitempty"`
 }
 

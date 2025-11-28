@@ -15,9 +15,9 @@ type Statistics struct {
 	TotalFiles    int                   `json:"total_files"`
 	Successful    int                   `json:"successful"`
 	Failed        int                   `json:"failed"`
-	Skipped       int                   `json:"skipped"`           // Files already at minimum version
-	VersionCounts map[int]int           `json:"version_counts"`    // Count by version number
-	Results       []*vault.RewrapResult `json:"results,omitempty"` // Individual results (optional)
+	Skipped       int                   `json:"skipped"`
+	VersionCounts map[int]int           `json:"version_counts"`
+	Results       []*vault.RewrapResult `json:"results,omitempty"`
 }
 
 // Reporter generates statistics and reports from rewrap results.
@@ -49,7 +49,7 @@ func (r *Reporter) AddResult(result *vault.RewrapResult) {
 	if result.Error != nil {
 		r.stats.Failed++
 	} else if result.NewVersion == 0 {
-		// NewVersion == 0 means no rewrap was performed (already at min version)
+		// No rewrap performed
 		r.stats.Skipped++
 	} else {
 		r.stats.Successful++
@@ -232,7 +232,7 @@ func (r *Reporter) GetSuccessfulFiles() []string {
 	return successful
 }
 
-// GetSkippedFiles returns a list of files that were skipped (already at min version).
+// GetSkippedFiles returns files that were skipped
 func (r *Reporter) GetSkippedFiles() []string {
 	skipped := make([]string, 0)
 	for _, result := range r.stats.Results {

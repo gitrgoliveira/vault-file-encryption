@@ -110,6 +110,7 @@ func (s *Service) setupVaultAndCrypto(cfg *config.Config) error {
 		TransitMount: cfg.Vault.TransitMount,
 		KeyName:      cfg.Vault.KeyName,
 		Timeout:      cfg.Vault.RequestTimeout,
+		Auth:         cfg.Vault.Auth,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create Vault client: %w", err)

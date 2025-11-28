@@ -16,7 +16,7 @@ type VaultClient interface {
 }
 
 const (
-	// DefaultChunkSize for reading files (1MB chunks)
+	// DefaultChunkSize for file operations: 1MB
 	DefaultChunkSize = 1024 * 1024
 
 	// ProgressReportInterval is the percentage interval for progress logging
@@ -46,8 +46,7 @@ func NewEncryptor(vaultClient VaultClient, cfg *EncryptorConfig) *Encryptor {
 	}
 }
 
-// EncryptFile encrypts a file using envelope encryption
-// Returns the encrypted data key (ciphertext) and error
+// EncryptFile encrypts a file using envelope encryption and returns the encrypted data key
 func (e *Encryptor) EncryptFile(ctx context.Context, sourcePath, destPath string, progressCallback func(float64)) (string, error) {
 	// Generate a new data encryption key from Vault
 	dataKey, err := e.vaultClient.GenerateDataKey()
@@ -74,7 +73,7 @@ func (e *Encryptor) EncryptFile(ctx context.Context, sourcePath, destPath string
 		return "", fmt.Errorf("failed to encrypt file: %w", err)
 	}
 
-	// Return the encrypted data key (ciphertext)
+	// Return the encrypted data key
 	return dataKey.Ciphertext, nil
 }
 

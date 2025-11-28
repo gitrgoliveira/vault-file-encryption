@@ -9,8 +9,8 @@ import (
 
 // BackupOptions configures backup behavior.
 type BackupOptions struct {
-	Enabled bool   // Whether to create backups
-	Suffix  string // Backup file suffix (default: ".bak")
+	Enabled bool   // Create backups
+	Suffix  string // Backup file suffix
 }
 
 // BackupManager handles creation and restoration of key file backups.

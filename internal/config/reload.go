@@ -32,7 +32,7 @@ func NewManager(configPath string) (*Manager, error) {
 	}, nil
 }
 
-// Get returns the current configuration (read-only)
+// Get returns the current configuration
 func (m *Manager) Get() *Config {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

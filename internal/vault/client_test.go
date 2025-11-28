@@ -4,11 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/gitrgoliveira/vault-file-encryption/internal/config"
 )
 
 func TestNewClient(t *testing.T) {
@@ -478,4 +482,150 @@ func TestHealthWithRetry_AllAttemptsFail(t *testing.T) {
 	err = client.HealthWithRetry(2, 10*time.Millisecond)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "attempt 3/3")
+}
+
+func TestNewClient_AppRoleAuth(t *testing.T) {
+	// Create mock Vault server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/auth/approle/login" {
+			// api.Client.Logical().Write uses PUT by default
+			assert.Equal(t, "PUT", r.Method)
+
+			var req map[string]string
+			err := json.NewDecoder(r.Body).Decode(&req)
+			require.NoError(t, err)
+
+			assert.Equal(t, "test-role-id", req["role_id"])
+			assert.Equal(t, "test-secret-id", req["secret_id"])
+
+			response := map[string]interface{}{
+				"auth": map[string]interface{}{
+					"client_token": "test-token",
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(response)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	cfg := &Config{
+		AgentAddress: server.URL,
+		TransitMount: "transit",
+		KeyName:      "test-key",
+		Auth: &config.AuthConfig{
+			Method: "approle",
+			AppRole: &config.AppRoleAuthConfig{
+				RoleID:   "test-role-id",
+				SecretID: "test-secret-id",
+			},
+		},
+	}
+
+	client, err := NewClient(cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, client)
+	assert.Equal(t, "test-token", client.client.Token())
+}
+
+func TestNewClient_KubernetesAuth(t *testing.T) {
+	// Create temporary token file
+	tmpTokenFile := filepath.Join(t.TempDir(), "token")
+	err := os.WriteFile(tmpTokenFile, []byte("test-jwt-token"), 0600)
+	require.NoError(t, err)
+
+	// Create mock Vault server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/auth/kubernetes/login" {
+			assert.Equal(t, "PUT", r.Method)
+
+			var req map[string]string
+			err := json.NewDecoder(r.Body).Decode(&req)
+			require.NoError(t, err)
+
+			assert.Equal(t, "test-role", req["role"])
+			assert.Equal(t, "test-jwt-token", req["jwt"])
+
+			response := map[string]interface{}{
+				"auth": map[string]interface{}{
+					"client_token": "test-k8s-token",
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(response)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	cfg := &Config{
+		AgentAddress: server.URL,
+		TransitMount: "transit",
+		KeyName:      "test-key",
+		Auth: &config.AuthConfig{
+			Method: "kubernetes",
+			Kubernetes: &config.KubernetesAuthConfig{
+				Role:      "test-role",
+				TokenPath: tmpTokenFile,
+			},
+		},
+	}
+
+	client, err := NewClient(cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, client)
+	assert.Equal(t, "test-k8s-token", client.client.Token())
+}
+
+func TestNewClient_JWTAuth(t *testing.T) {
+	// Create temporary jwt file
+	tmpJWTFile := filepath.Join(t.TempDir(), "jwt")
+	err := os.WriteFile(tmpJWTFile, []byte("test-jwt-token"), 0600)
+	require.NoError(t, err)
+
+	// Create mock Vault server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/auth/jwt/login" {
+			assert.Equal(t, "PUT", r.Method)
+
+			var req map[string]string
+			err := json.NewDecoder(r.Body).Decode(&req)
+			require.NoError(t, err)
+
+			assert.Equal(t, "test-role", req["role"])
+			assert.Equal(t, "test-jwt-token", req["jwt"])
+
+			response := map[string]interface{}{
+				"auth": map[string]interface{}{
+					"client_token": "test-jwt-token-response",
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(response)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	cfg := &Config{
+		AgentAddress: server.URL,
+		TransitMount: "transit",
+		KeyName:      "test-key",
+		Auth: &config.AuthConfig{
+			Method: "jwt",
+			JWT: &config.JWTAuthConfig{
+				Role: "test-role",
+				Path: tmpJWTFile,
+			},
+		},
+	}
+
+	client, err := NewClient(cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, client)
+	assert.Equal(t, "test-jwt-token-response", client.client.Token())
 }

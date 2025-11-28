@@ -83,9 +83,6 @@ func runKeyVersions(keyFile, directory string, recursive bool, outputFormat stri
 	}
 	defer func() { _ = log.Sync() }()
 
-	// NOTE: key-versions does not need Vault access - it only parses local .key files
-	// No configuration or Vault client needed
-
 	// Scan for key files
 	var files []string
 	if keyFile != "" {
@@ -132,7 +129,7 @@ func runKeyVersions(keyFile, directory string, recursive bool, outputFormat stri
 			continue
 		}
 
-		// Get version info (doesn't call Vault, just parses version)
+		// Get version info without calling Vault
 		versionInfo, err := vault.GetKeyVersionInfo(filePath, string(ciphertext), 0)
 		if err != nil {
 			log.Error("Failed to get version info", "file", filePath, "error", err)
@@ -147,7 +144,7 @@ func runKeyVersions(keyFile, directory string, recursive bool, outputFormat stri
 		reporter.AddResult(&vault.RewrapResult{
 			FilePath:      filePath,
 			OldVersion:    versionInfo.Version,
-			NewVersion:    0, // 0 indicates no rewrap performed
+			NewVersion:    0, // No rewrap performed
 			BackupCreated: false,
 			Error:         nil,
 		})

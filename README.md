@@ -129,6 +129,8 @@ Key points:
 - **CLI Mode**: One-off encryption/decryption operations
 - **Configurable Chunk Size**: Optimize encryption for file size (64KB-10MB)
 - **Key Re-wrapping**: Rotate encrypted DEKs to newer Vault key versions without re-encrypting data
+- **Flexible Vault Authentication**: Multiple auth methods supported - Token, AppRole, Kubernetes, JWT, TLS Certificate, or using Vault Agent
+
 
 ## Table of Contents
 
@@ -149,9 +151,11 @@ Key points:
 - **Vault**: One of the following:
   - **HCP Vault** cluster with Transit Engine enabled, OR
   - **Vault Enterprise** (or Community Edition) for local development
-- **Vault Agent** configured with appropriate authentication:
-  - **HCP Vault**: Token-based authentication (for testing only)
-  - **Vault Enterprise**: Certificate-based authentication
+- **Authentication**: Choose one of:
+  - **Vault Agent** (recommended for production) - handles authentication automatically
+  - **Direct authentication** - Token, AppRole, Kubernetes, JWT, or TLS Certificate
+  - See [Vault Authentication](#vault-authentication) section for configuration details
+
 
 ## Quick Start
 
@@ -338,7 +342,184 @@ logging {
 }
 ```
 
+### Vault Authentication
+
+The application supports multiple Vault authentication methods. Choose the approach that best fits your deployment:
+
+- **Vault Agent** (recommended) - Automatic authentication, no config needed
+- **Direct Authentication** - Token, AppRole, Kubernetes, JWT, or TLS Certificate
+
+#### Option 1: Vault Agent (Recommended)
+
+Vault Agent handles authentication automatically. Simply point to the agent's listener:
+
+```hcl
+vault {
+  agent_address = "http://127.0.0.1:8200"  # Vault Agent listener
+  transit_mount = "transit"
+  key_name = "file-encryption-key"
+  # No auth block needed
+}
+```
+
+#### Option 2: Direct Authentication
+
+For environments without Vault Agent, configure one of the following methods:
+
+##### Token Authentication
+
+**Use case:** Development and testing only
+
+**Configuration:**
+```hcl
+vault {
+  agent_address = "https://vault.example.com:8200"
+  transit_mount = "transit"
+  key_name = "file-encryption-key"
+  
+  auth {
+    method = "token"
+    token {
+      token = "hvs.CAES..."  # Or set VAULT_TOKEN env var
+    }
+  }
+}
+```
+
+**Environment variables:**
+- `VAULT_TOKEN` - Vault token
+- `VAULT_NAMESPACE` - Vault namespace (optional)
+
+##### AppRole Authentication
+
+**Use case:** Production applications and services
+
+**Configuration:**
+```hcl
+vault {
+  agent_address = "https://vault.example.com:8200"
+  transit_mount = "transit"
+  key_name = "file-encryption-key"
+  
+  auth {
+    method = "approle"
+    approle {
+      role_id = "your-role-id"      # Or set VAULT_ROLE_ID env var
+      secret_id = "your-secret-id"  # Or set VAULT_SECRET_ID env var
+      mount_path = "auth/approle"   # Optional, defaults to "auth/approle"
+    }
+  }
+}
+```
+
+**Environment variables:**
+- `VAULT_ROLE_ID` - AppRole role ID
+- `VAULT_SECRET_ID` - AppRole secret ID
+
+##### Kubernetes Authentication
+
+**Use case:** Kubernetes deployments
+
+**Configuration:**
+```hcl
+vault {
+  agent_address = "https://vault.example.com:8200"
+  transit_mount = "transit"
+  key_name = "file-encryption-key"
+  
+  auth {
+    method = "kubernetes"
+    kubernetes {
+      role = "file-encryptor"
+      token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"  # Optional
+      mount_path = "auth/kubernetes"  # Optional
+    }
+  }
+}
+```
+
+**Environment variables:** None (uses service account token file)
+
+##### JWT Authentication
+
+**Use case:** CI/CD pipelines, OIDC providers
+
+**Configuration:**
+```hcl
+vault {
+  agent_address = "https://vault.example.com:8200"
+  transit_mount = "transit"
+  key_name = "file-encryption-key"
+  
+  auth {
+    method = "jwt"
+    jwt {
+      role = "file-encryptor"
+      path = "/path/to/jwt/token"
+      mount_path = "auth/jwt"  # Optional
+    }
+  }
+}
+```
+
+**Environment variables:** None (uses JWT file specified in config)
+
+##### TLS Certificate Authentication
+
+**Use case:** Mutual TLS environments
+
+**Configuration:**
+```hcl
+vault {
+  agent_address = "https://vault.example.com:8200"
+  transit_mount = "transit"
+  key_name = "file-encryption-key"
+  
+  auth {
+    method = "cert"
+    cert {
+      client_cert = "/path/to/client.crt"
+      client_key = "/path/to/client.key"
+      mount_path = "auth/cert"  # Optional
+      name = "file-encryptor"   # Optional, defaults to cert common name
+    }
+  }
+}
+```
+
+**Environment variables:** None (uses certificate files specified in config)
+
+#### Authentication Best Practices
+
+**Security:**
+- Use environment variables for sensitive credentials instead of hardcoding in config files
+- Rotate credentials regularly
+- Use least-privilege Vault policies for each authentication method
+
+**Production recommendations:**
+- **Preferred:** Vault Agent or platform identity authentication
+- **Avoid:** Token authentication (development/testing only)
+
+**Configuration rules:**
+- Only **one authentication method** can be configured at a time
+- Environment variables override configuration file values
+
+**Example with environment variables:**
+```bash
+# Token authentication
+export VAULT_TOKEN="hvs.CAES..."
+./bin/file-encryptor watch -c config.hcl
+
+# AppRole authentication
+export VAULT_ROLE_ID="your-role-id"
+export VAULT_SECRET_ID="your-secret-id"
+./bin/file-encryptor encrypt -i file.txt -o file.enc -c config.hcl
+```
+
+
 ### Chunk Size Configuration
+
+
 
 Control memory usage and performance by configuring the encryption chunk size:
 

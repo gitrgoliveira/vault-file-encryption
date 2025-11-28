@@ -10,12 +10,12 @@ import (
 // ScanOptions configures the key file scanner.
 type ScanOptions struct {
 	Directory string // Root directory to scan
-	Recursive bool   // Whether to scan subdirectories recursively
+	Recursive bool   // Scan subdirectories recursively
 }
 
 // ScanResult represents the outcome of scanning a directory for key files.
 type ScanResult struct {
-	Files []string // List of discovered .key file paths
+	Files []string // Discovered .key file paths
 	Count int      // Number of files found
 	Error error    // Error if scan failed
 }

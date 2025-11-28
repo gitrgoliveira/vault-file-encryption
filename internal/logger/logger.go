@@ -135,7 +135,7 @@ func parseSlogLevel(levelStr string) slog.Level {
 	}
 }
 
-// formatFields formats key-value pairs for logging (used by tests)
+// formatFields formats key-value pairs for logging
 func formatFields(keysAndValues ...interface{}) string {
 	var parts []string
 
@@ -154,7 +154,7 @@ func formatFields(keysAndValues ...interface{}) string {
 type slogLogger struct {
 	logger    *slog.Logger
 	output    io.WriteCloser
-	auditFile io.WriteCloser // Track audit file handle for proper cleanup
+	auditFile io.WriteCloser // Audit file handle for cleanup
 }
 
 // Debug logs a debug message

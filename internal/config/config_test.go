@@ -640,3 +640,84 @@ logging {
 	require.Nil(t, cfg)
 	assert.Contains(t, err.Error(), "invalid request_timeout duration", "should error on invalid duration format")
 }
+
+func TestLoadFromString_WithAuth(t *testing.T) {
+	hclContent := `
+vault {
+  agent_address = "http://127.0.0.1:8200"
+  transit_mount = "transit"
+  key_name = "test-key"
+  auth {
+    method = "approle"
+    approle {
+      role_id = "test-role-id"
+      secret_id = "test-secret-id"
+    }
+  }
+}
+
+encryption {
+  source_dir = "/tmp/source"
+  dest_dir = "/tmp/dest"
+  source_file_behavior = "archive"
+}
+
+queue {
+  state_path = "/tmp/queue.json"
+}
+
+logging {
+  level = "info"
+}
+`
+
+	cfg, err := LoadFromString("test-auth.hcl", hclContent)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	require.NotNil(t, cfg.Vault.Auth)
+
+	assert.Equal(t, "approle", cfg.Vault.Auth.Method)
+	require.NotNil(t, cfg.Vault.Auth.AppRole)
+	assert.Equal(t, "test-role-id", cfg.Vault.Auth.AppRole.RoleID)
+	assert.Equal(t, "test-secret-id", cfg.Vault.Auth.AppRole.SecretID)
+}
+
+func TestLoadFromString_MultipleAuthMethods(t *testing.T) {
+	hclContent := `
+vault {
+  agent_address = "http://127.0.0.1:8200"
+  transit_mount = "transit"
+  key_name = "test-key"
+  auth {
+    method = "approle"
+    approle {
+      role_id = "test-role-id"
+      secret_id = "test-secret-id"
+    }
+    token {
+      token = "test-token"
+    }
+  }
+}
+
+encryption {
+  source_dir = "/tmp/source"
+  dest_dir = "/tmp/dest"
+  source_file_behavior = "archive"
+}
+
+queue {
+  state_path = "/tmp/queue.json"
+}
+
+logging {
+  level = "info"
+}
+`
+
+	cfg, err := LoadFromString("test-multi-auth.hcl", hclContent)
+	// LoadFromString calls SetDefaults which calls Validate
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
+	assert.Contains(t, err.Error(), "multiple authentication methods configured")
+}
