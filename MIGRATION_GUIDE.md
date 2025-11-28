@@ -1,17 +1,17 @@
-# Migration Guide: v1.x to v2.0.0
+# Migration Guide: v0.x to v1.0.0
 
-Version 2.0.0 introduces a major architectural change by integrating the `go-fileencrypt` library for the underlying encryption primitives. This results in a **breaking change** to the encrypted file format.
+Version 1.0.0 introduces a major architectural change by integrating the `go-fileencrypt` library for the underlying encryption primitives. This results in a **breaking change** to the encrypted file format.
 
 ## Breaking Changes
 
 ### File Format Incompatibility
-Files encrypted with versions prior to v2.0.0 are **NOT compatible** with v2.0.0+. You cannot decrypt old files with the new version.
+Files encrypted with versions prior to v1.0.0 are **NOT compatible** with v1.0.0+. You cannot decrypt old files with the new version.
 
 **Action Required:**
-Before upgrading to v2.0.0, you must:
-1. Decrypt all existing files using your current version (v1.x).
-2. Upgrade to v2.0.0.
-3. Re-encrypt the files using v2.0.0.
+Before upgrading to v1.0.0, you must:
+1. Decrypt all existing files using your current version (v0.x).
+2. Upgrade to v1.0.0.
+3. Re-encrypt the files using v1.0.0.
 
 ### API Changes
 If you are using this project as a library:
@@ -26,17 +26,17 @@ If you are using this project as a library:
 
 ## Migration Steps
 
-1. **Decrypt Existing Data (v1.x)**
+1. **Decrypt Existing Data (v0.x)**
    ```bash
-   # Using v1.x binary
+   # Using v0.x binary
    vault-file-encryption decrypt --input my-secret.enc --output my-secret.txt --key my-secret.key
    ```
 
 2. **Upgrade Binary**
-   Download or build the v2.0.0 binary.
+   Download or build the v1.0.0 binary.
 
-3. **Re-encrypt Data (v2.0.0)**
+3. **Re-encrypt Data (v1.0.0)**
    ```bash
-   # Using v2.0.0 binary
+   # Using v1.0.0 binary
    vault-file-encryption encrypt --input my-secret.txt --output my-secret.enc
    ```
