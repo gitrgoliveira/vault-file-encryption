@@ -140,8 +140,6 @@ Key points:
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Architecture](#architecture)
-- [Development](#development)
-- [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -795,85 +793,6 @@ For complete Vault setup instructions including policy configuration, see:
 - [Vault Setup Guide (HCP)](docs/guides/VAULT_SETUP_GUIDE.md)
 - [Vault Enterprise Setup Guide](docs/guides/VAULT_ENTERPRISE_SETUP_GUIDE.md)
 
-
-## Development
-
-### Requirements
-
-- Go 1.25.0 or later
-- Make
-- golangci-lint (optional, for linting)
-
-### Setup Development Environment
-
-```bash
-# Clone repository
-git clone https://github.com/gitrgoliveira/vault-file-encryption.git
-cd vault-file-encryption
-
-# Install dependencies
-make deps
-
-# Run tests
-make test
-
-# Run linter (requires golangci-lint)
-make lint
-
-# Format code
-make fmt
-
-# Build binary
-make build
-```
-
-### Project Structure
-
-```
-vault-file-encryption/
-├── cmd/file-encryptor/       # Application entry point
-├── internal/                 # Internal packages
-│   ├── config/              # Configuration management
-│   ├── crypto/              # Encryption/decryption
-│   ├── vault/               # Vault client
-│   ├── watcher/             # File watching
-│   ├── queue/               # Queue management
-│   ├── logger/              # Logging
-│   └── version/             # Version info
-├── scripts/                 # Setup scripts
-├── configs/                 # Configuration examples
-├── test/                    # Tests
-└── docs/                    # Documentation
-```
-
-## Testing
-
-### Run Unit Tests
-
-```bash
-make test
-```
-
-### Run Integration Tests
-
-Requires Vault running:
-
-```bash
-make test-integration
-```
-
-### Generate Coverage Report
-
-```bash
-make coverage
-```
-
-### Run Specific Test
-
-```bash
-go test -v ./internal/config -run TestLoadConfig
-```
-
 ## Documentation
 
 ### User Guides
@@ -888,7 +807,6 @@ go test -v ./internal/config -run TestLoadConfig
 **Unix/Linux/macOS:**
 - [Vault Setup Guide (HCP)](docs/guides/VAULT_SETUP_GUIDE.md) - HCP Vault setup instructions
 - [Vault Enterprise Setup](docs/guides/VAULT_ENTERPRISE_SETUP_GUIDE.md) - Vault Enterprise setup
-- [Vault Enterprise Implementation](docs/guides/VAULT_ENTERPRISE_IMPLEMENTATION.md) - Enterprise implementation details
 
 **Windows:**
 - [Vault Setup Guide (HCP) - Windows](docs/guides/VAULT_SETUP_GUIDE_WINDOWS.md) - HCP Vault setup for Windows
@@ -1018,11 +936,10 @@ pkill -SIGHUP file-encryptor
 
 ### DOS Prevention
 - **Chunk Size Validation**: Rejects chunks larger than 10MB during decryption
-- **File Size Limits**: Enforces maximum file size based on chunk count
 - **Resource Protection**: Prevents memory exhaustion from malformed files
 
 ### Infrastructure Security
-- **Vault Agent**: Uses token authentication (HCP) or certificate authentication (Enterprise)
+- **Vault Agent**: Can use multiple authentication methods, keeping credentials rotated, and handles several types of secrets 
 - **TLS**: All Vault communication over HTTPS
 - **Audit Logging**: All operations logged with security events
 - **No Primary Key Exposure**: Primary key never leaves Vault
@@ -1062,31 +979,6 @@ If a copy of the MPL was not distributed with this file, You can obtain one at h
 
 See [LICENSE](LICENSE) for full details.
 
-## Project Status
-
-**Current Version**: 0.0.1 (MVP)
-
-### Completed Features
-
-- [x] Core encryption/decryption with envelope encryption
-- [x] Vault Transit Engine integration (HCP + Enterprise)
-- [x] CLI mode for one-off operations
-- [x] Service mode with continuous file watching
-- [x] FIFO queue with retry logic and persistence
-- [x] HCL configuration with validation
-- [x] Hot-reload support (Unix/Linux/macOS)
-- [x] Structured logging with audit support
-- [x] Key re-wrapping for rotation
-- [x] Offline key version auditing
-- [x] Multi-platform support (Windows, macOS, Linux)
-- [x] Comprehensive testing (369+ tests)
-- [x] CI/CD with GitHub Actions
-- [x] Security scanning (gosec, staticcheck, golangci-lint)
-- [x] Multi-platform builds and releases
-- [x] Complete documentation
-
----
-
 ## Quality and Validation
 
 This project includes comprehensive validation tools to ensure code quality and security:
@@ -1110,11 +1002,5 @@ make build-validated
 ```
 
 ### CI/CD Integration
-
-- Automated testing on all pull requests
-- Security scanning with gosec
-- Static analysis with staticcheck
-- Multi-platform builds (Linux, macOS, Windows)
-- Code coverage reporting
 
 See [.github/workflows/build-and-test.yml](.github/workflows/build-and-test.yml) for the complete CI/CD pipeline.
