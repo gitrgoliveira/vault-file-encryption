@@ -1,6 +1,6 @@
 # Vault Setup Guide - HCP Vault (Windows)
 
-> **Note**: This guide is for **HCP Vault (cloud-hosted)** on **Windows** platforms. For Unix/Linux/macOS, see [VAULT_SETUP_GUIDE.md](VAULT_SETUP_GUIDE.md). For Vault Enterprise setup, see [VAULT_ENTERPRISE_SETUP_GUIDE_WINDOWS.md](VAULT_ENTERPRISE_SETUP_GUIDE_WINDOWS.md).
+> **Note**: This guide is for **HCP Vault (cloud-hosted)** on **Windows** platforms. For Unix/Linux/macOS, see [VAULT_SETUP_GUIDE.md](VAULT_SETUP_GUIDE.md).
 
 This guide walks you through setting up HCP Vault for the file-encryptor application on Windows.
 
@@ -159,22 +159,23 @@ Leave this running in a PowerShell window. The file-encryptor application will c
 
 ## Architecture
 
-```
-[File Encryptor]
-[ Application  ]
-       |
-       | http://127.0.0.1:8200
-       v
-[  Vault Agent   ] <--- Auto-auth with token
-[ (Local Proxy)  ]
-       |
-       | HTTPS + Token
-       v
-[   HCP Vault    ]
-[                ]
-[ * Transit Engine]
-[ * Policies     ]
-[ * Namespace    ]
+```mermaid
+graph TD
+    FE[File Encryptor<br/>Application] -->|http://127.0.0.1:8200| VA[Vault Agent<br/>Local Proxy]
+    VA -->|HTTPS + Token| HCP[HCP Vault]
+    
+    VA -- Auto-auth with token --> VA
+    
+    subgraph HCP Vault
+        HCP
+        TE[Transit Engine]
+        POL[Policies]
+        NS[Namespace]
+        
+        HCP --- TE
+        HCP --- POL
+        HCP --- NS
+    end
 ```
 
 ## Security Model
@@ -498,9 +499,8 @@ Proceed to [CLI Usage (Windows)](CLI_MODE_WINDOWS.md) or [Architecture](../ARCHI
 
 ## Related Guides
 
-- **Vault Enterprise Setup**: See [VAULT_ENTERPRISE_SETUP_GUIDE_WINDOWS.md](VAULT_ENTERPRISE_SETUP_GUIDE_WINDOWS.md)
-- **CLI Usage**: See [CLI_MODE_WINDOWS.md](CLI_MODE_WINDOWS.md)
 - **Unix/Linux/macOS Guide**: See [VAULT_SETUP_GUIDE.md](VAULT_SETUP_GUIDE.md)
+- **CLI Usage**: See [CLI_MODE_WINDOWS.md](CLI_MODE_WINDOWS.md)
 
 ## Additional Resources
 

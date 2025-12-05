@@ -1,6 +1,6 @@
 # Vault Enterprise Setup Guide - Local Dev Mode
 
-> **Note**: This guide is for **Vault Enterprise (self-hosted)** on **Unix, Linux, and macOS** platforms. For Windows, see [VAULT_ENTERPRISE_SETUP_GUIDE_WINDOWS.md](VAULT_ENTERPRISE_SETUP_GUIDE_WINDOWS.md). For HCP Vault setup, see [VAULT_SETUP_GUIDE.md](VAULT_SETUP_GUIDE.md).
+> **Note**: This guide is for **Vault Enterprise (self-hosted)** on **Unix, Linux, and macOS** platforms. For HCP Vault setup, see [VAULT_SETUP_GUIDE.md](VAULT_SETUP_GUIDE.md).
 
 This guide walks you through setting up a local Vault Enterprise instance in dev mode for the file-encryptor application.
 
@@ -406,7 +406,7 @@ cd scripts/vault-setup-enterprise
 - **HCP Vault Setup**: See [VAULT_SETUP_GUIDE.md](VAULT_SETUP_GUIDE.md)
 - **CLI Usage**: See [CLI_MODE.md](CLI_MODE.md)
 - **Architecture**: See [../ARCHITECTURE.md](../ARCHITECTURE.md)
-- **Windows Users**: See [VAULT_ENTERPRISE_SETUP_GUIDE_WINDOWS.md](VAULT_ENTERPRISE_SETUP_GUIDE_WINDOWS.md)
+- **Windows Users**: See [VAULT_SETUP_GUIDE_WINDOWS.md](VAULT_SETUP_GUIDE_WINDOWS.md)
 
 ## Additional Resources
 

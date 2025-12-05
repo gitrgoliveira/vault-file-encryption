@@ -9,7 +9,7 @@ LDFLAGS=-ldflags "-s -w -X github.com/gitrgoliveira/vault-file-encryption/intern
 	-X github.com/gitrgoliveira/vault-file-encryption/internal/version.GitCommit=${GIT_COMMIT} \
 	-X github.com/gitrgoliveira/vault-file-encryption/internal/version.BuildDate=${BUILD_TIME}"
 
-.PHONY: all build test clean install lint fmt vet deps help build-all build-linux build-darwin build-windows coverage test-integration security gosec staticcheck fmt-check lint-all validate-all ci-validate build-validated
+.PHONY: all build test clean install lint fmt vet deps help build-all build-linux build-darwin build-windows coverage test-integration security gosec staticcheck fmt-check lint-all validate-all ci-validate build-validated docs docs-build docs-serve
 
 all: test build
 
@@ -114,6 +114,31 @@ deps:
 	go mod download
 	go mod tidy
 
+docs:
+	@echo "Preparing documentation..."
+	@cp README.md docs/index.md
+	@cp CONTRIBUTING.md docs/CONTRIBUTING.md
+	@cp MIGRATION_GUIDE.md docs/MIGRATION_GUIDE.md
+	@echo "Fixing links for MkDocs..."
+	@perl -pi -e 's|docs/guides/|guides/|g' docs/index.md
+	@perl -pi -e 's|docs/ARCHITECTURE.md|ARCHITECTURE.md|g' docs/index.md
+	@perl -pi -e 's|configs/|https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/|g' docs/index.md
+	@perl -pi -e 's|.github/|https://github.com/gitrgoliveira/vault-file-encryption/blob/main/.github/|g' docs/index.md
+	@perl -pi -e 's|docs/guides/|guides/|g' docs/CONTRIBUTING.md
+	@perl -pi -e 's|docs/ARCHITECTURE.md|ARCHITECTURE.md|g' docs/CONTRIBUTING.md
+
+docs-build: docs
+	@echo "Building documentation site..."
+	@which mkdocs > /dev/null || (echo "mkdocs not found. Please install it (pip install mkdocs-material)" && exit 1)
+	mkdocs build
+	@echo "✅ Documentation built in site/ directory"
+
+docs-serve: docs
+	@echo "Serving documentation..."
+	@which mkdocs > /dev/null || (echo "mkdocs not found. Please install it (pip install mkdocs-material)" && exit 1)
+	mkdocs serve
+
+
 help:
 	@echo "Available targets:"
 	@echo "  build         - Build the binary for current platform"
@@ -138,4 +163,7 @@ help:
 	@echo "  ci-validate   - CI validation (same as validate-all)"
 	@echo "  build-validated - Build with all validations"
 	@echo "  deps          - Download and tidy dependencies"
+	@echo "  docs          - Prepare documentation files"
+	@echo "  docs-build    - Build static documentation site"
+	@echo "  docs-serve    - Serve documentation locally"
 	@echo "  help          - Show this help message"

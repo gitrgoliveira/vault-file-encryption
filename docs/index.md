@@ -174,7 +174,7 @@ Choose your Vault deployment:
 **Option A: HCP Vault (Cloud)**
 ```bash
 # Follow the HCP Vault setup guide
-# See: docs/guides/VAULT_SETUP_GUIDE.md
+# See: guides/VAULT_SETUP_GUIDE.md
 cd scripts/vault-setup
 terraform init
 terraform apply
@@ -183,7 +183,7 @@ terraform apply
 **Option B: Vault Enterprise (Local Dev Mode)**
 ```bash
 # Follow the Vault Enterprise setup guide
-# See: docs/guides/VAULT_ENTERPRISE_SETUP_GUIDE.md
+# See: guides/VAULT_ENTERPRISE_SETUP_GUIDE.md
 cd scripts/vault-setup-enterprise
 ./01-start-vault-dev.sh    # Terminal 1
 ./02-configure-vault.sh    # Terminal 2
@@ -194,7 +194,7 @@ cd scripts/vault-setup-enterprise
 **For HCP Vault**:
 ```bash
 # Unix/Linux/macOS
-vault agent -config=configs/vault-agent/vault-agent-hcp-token.hcl
+vault agent -config=https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/vault-agent/vault-agent-hcp-token.hcl
 ```
 
 ```powershell
@@ -205,7 +205,7 @@ vault agent -config=configs\vault-agent\vault-agent-hcp-token.hcl
 **For Vault Enterprise**:
 ```bash
 # Unix/Linux/macOS
-vault agent -config=configs/vault-agent/vault-agent-enterprise-dev.hcl
+vault agent -config=https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/vault-agent/vault-agent-enterprise-dev.hcl
 ```
 
 ```powershell
@@ -221,7 +221,7 @@ vault agent -config=configs\vault-agent\vault-agent-enterprise-dev.hcl
 ./bin/file-encryptor encrypt \
   -i myfile.txt \
   -o myfile.txt.enc \
-  -c configs/examples/example.hcl
+  -c https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example.hcl
 ```
 
 ```powershell
@@ -238,7 +238,7 @@ vault agent -config=configs\vault-agent\vault-agent-enterprise-dev.hcl
 ./bin/file-encryptor encrypt \
   -i myfile.txt \
   -o myfile.txt.enc \
-  -c configs/examples/example-enterprise.hcl
+  -c https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example-enterprise.hcl
 ```
 
 ```powershell
@@ -257,7 +257,7 @@ This creates:
 
 ```bash
 # Unix/Linux/macOS
-./bin/file-encryptor watch -c configs/examples/example.hcl
+./bin/file-encryptor watch -c https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example.hcl
 ```
 
 ```powershell
@@ -314,7 +314,7 @@ go build -o bin\file-encryptor.exe cmd/file-encryptor/main.go
 
 ### Example Configuration
 
-See [`configs/examples/example.hcl`](configs/examples/example.hcl) for a complete configuration example.
+See [`https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example.hcl`](https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example.hcl) for a complete configuration example.
 
 ### Minimal Configuration
 
@@ -551,7 +551,7 @@ encryption {
 
 **Note**: Service mode processes one file at a time, so choose chunk size based on your typical file size, not concurrent operations.
 
-See [`docs/guides/CHUNK_SIZE_TUNING.md`](docs/guides/CHUNK_SIZE_TUNING.md) for detailed tuning guide with benchmarking and troubleshooting.
+See [`guides/CHUNK_SIZE_TUNING.md`](guides/CHUNK_SIZE_TUNING.md) for detailed tuning guide with benchmarking and troubleshooting.
 
 ### Hot Reload
 
@@ -671,11 +671,11 @@ Global Flags:
 
 **Note**: The `key-versions` command works offline and does not require Vault configuration.
 
-For detailed rewrap documentation, see [REWRAP_GUIDE.md](docs/guides/REWRAP_GUIDE.md).
+For detailed rewrap documentation, see [REWRAP_GUIDE.md](guides/REWRAP_GUIDE.md).
 
 ## Architecture
 
-For detailed architecture documentation, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Vault Policies
 
@@ -792,26 +792,26 @@ vault write auth/cert/certs/file-encryptor-rewrap \
 **Note:** The `key-versions` command does not require any Vault access as it operates offline on local `.key` files.
 
 For complete Vault setup instructions including policy configuration, see:
-- [Vault Setup Guide (HCP)](docs/guides/VAULT_SETUP_GUIDE.md)
-- [Vault Enterprise Setup Guide](docs/guides/VAULT_ENTERPRISE_SETUP_GUIDE.md)
+- [Vault Setup Guide (HCP)](guides/VAULT_SETUP_GUIDE.md)
+- [Vault Enterprise Setup Guide](guides/VAULT_ENTERPRISE_SETUP_GUIDE.md)
 
 ## Documentation
 
 ### User Guides
-- [Architecture](docs/ARCHITECTURE.md) - System architecture and design
-- [CLI Mode Guide](docs/guides/CLI_MODE.md) - CLI usage (Unix/Linux/macOS)
-- [CLI Mode Guide (Windows)](docs/guides/CLI_MODE_WINDOWS.md) - CLI usage for Windows
-- [Rewrap Guide](docs/guides/REWRAP_GUIDE.md) - Key re-wrapping documentation
-- [Chunk Size Tuning](docs/guides/CHUNK_SIZE_TUNING.md) - Performance optimization guide
+- [Architecture](ARCHITECTURE.md) - System architecture and design
+- [CLI Mode Guide](guides/CLI_MODE.md) - CLI usage (Unix/Linux/macOS)
+- [CLI Mode Guide (Windows)](guides/CLI_MODE_WINDOWS.md) - CLI usage for Windows
+- [Rewrap Guide](guides/REWRAP_GUIDE.md) - Key re-wrapping documentation
+- [Chunk Size Tuning](guides/CHUNK_SIZE_TUNING.md) - Performance optimization guide
 
 ### Setup Guides
 
 **Unix/Linux/macOS:**
-- [Vault Setup Guide (HCP)](docs/guides/VAULT_SETUP_GUIDE.md) - HCP Vault setup instructions
-- [Vault Enterprise Setup](docs/guides/VAULT_ENTERPRISE_SETUP_GUIDE.md) - Vault Enterprise setup
+- [Vault Setup Guide (HCP)](guides/VAULT_SETUP_GUIDE.md) - HCP Vault setup instructions
+- [Vault Enterprise Setup](guides/VAULT_ENTERPRISE_SETUP_GUIDE.md) - Vault Enterprise setup
 
 **Windows:**
-- [Vault Setup Guide (HCP) - Windows](docs/guides/VAULT_SETUP_GUIDE_WINDOWS.md) - HCP Vault setup for Windows
+- [Vault Setup Guide (HCP) - Windows](guides/VAULT_SETUP_GUIDE_WINDOWS.md) - HCP Vault setup for Windows
 
 > **Note**: Vault Enterprise setup guide for Windows follows the same patterns as the Unix guide with PowerShell commands instead of bash. See the Unix guide and adapt commands for Windows.
 
@@ -889,8 +889,8 @@ Start-Service FileEncryptor
 ```
 
 **Windows-Specific Guides:**
-- [CLI Mode (Windows)](docs/guides/CLI_MODE_WINDOWS.md)
-- [Vault Setup (Windows)](docs/guides/VAULT_SETUP_GUIDE_WINDOWS.md)
+- [CLI Mode (Windows)](guides/CLI_MODE_WINDOWS.md)
+- [Vault Setup (Windows)](guides/VAULT_SETUP_GUIDE_WINDOWS.md)
 
 ### Linux/macOS
 
@@ -953,7 +953,7 @@ Encrypted files include:
 - Per-chunk encryption with incremented nonces
 - GCM authentication tags (128-bit per chunk)
 
-For detailed security architecture, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+For detailed security architecture, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ## Support
 
@@ -1005,4 +1005,4 @@ make build-validated
 
 ### CI/CD Integration
 
-See [.github/workflows/build-and-test.yml](.github/workflows/build-and-test.yml) for the complete CI/CD pipeline.
+See [https://github.com/gitrgoliveira/vault-file-encryption/blob/main/.github/workflows/build-and-test.yml](https://github.com/gitrgoliveira/vault-file-encryption/blob/main/.github/workflows/build-and-test.yml) for the complete CI/CD pipeline.

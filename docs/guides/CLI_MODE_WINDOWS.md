@@ -429,7 +429,7 @@ if ($LASTEXITCODE -eq 0) {
 
 ## Additional Resources
 
-- [Windows Installation Guide](../../README.md#windows)
+- [Windows Installation Guide](../index.md#windows)
 - [Configuration Guide](../ARCHITECTURE.md#configuration-management)
 - [Vault Setup for Windows](VAULT_SETUP_GUIDE_WINDOWS.md)
 - [Main CLI Mode Guide](CLI_MODE.md) (Unix/Linux/macOS)

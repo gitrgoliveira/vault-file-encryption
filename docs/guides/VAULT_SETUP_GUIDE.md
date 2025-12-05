@@ -105,22 +105,23 @@ Leave this running in a separate terminal. The file-encryptor application will c
 
 ## Architecture
 
-```
-[File Encryptor]
-[ Application  ]
-       |
-       | http://127.0.0.1:8200
-       v
-[  Vault Agent   ] <--- Auto-auth with token
-[ (Local Proxy)  ]
-       |
-       | HTTPS + Token
-       v
-[   HCP Vault    ]
-[                ]
-[ * Transit Engine]
-[ * Policies     ]
-[ * Namespace    ]
+```mermaid
+graph TD
+    FE[File Encryptor<br/>Application] -->|http://127.0.0.1:8200| VA[Vault Agent<br/>Local Proxy]
+    VA -->|HTTPS + Token| HCP[HCP Vault]
+    
+    VA -- Auto-auth with token --> VA
+    
+    subgraph HCP Vault
+        HCP
+        TE[Transit Engine]
+        POL[Policies]
+        NS[Namespace]
+        
+        HCP --- TE
+        HCP --- POL
+        HCP --- NS
+    end
 ```
 
 ## Security Model

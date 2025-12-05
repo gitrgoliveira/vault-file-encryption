@@ -1,747 +1,267 @@
-# Architecture Overview
+# Architecture
 
-**Project**: Vault File Encryption  
-**Version**: 0.6.0  
-**Last Updated**: November 2025
+This document describes the architecture of the Vault File Encryption tool, including its core components, data flows, and security model.
 
-## System Architecture
+## Overview
+
+The application provides secure file encryption using HashiCorp Vault's Transit secrets engine. It implements **envelope encryption**, where a unique Data Encryption Key (DEK) is generated for each file and encrypted by Vault's primary key.
+
+### Operation Modes
+
+| Mode | Command | Description |
+|------|---------|-------------|
+| **Service Mode** | `watch` | Continuously monitors directories for new files |
+| **CLI Mode** | `encrypt` / `decrypt` | One-off encryption or decryption of individual files |
 
 ### High-Level Architecture
 
-The application supports **two modes of operation**:
+```mermaid
+graph TD
+    subgraph App["File Encryptor Application"]
+        subgraph CLI_Interface["CLI Interface"]
+            direction TB
+            watch["watch (service)"]
+            encrypt["encrypt (one-off)"]
+            decrypt["decrypt (one-off)"]
+        end
 
-1. **Service Mode** (watch): Continuous file watching and processing
-2. **CLI Mode** (one-off): Single file encryption/decryption
+        file_watcher["File Watcher (fsnotify)"]
+        queue["FIFO Queue (Persistent)"]
+        processor["Direct Processor"]
+        retry["Retry Logic (Exp Backoff)"]
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     File Encryptor Application                   │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────┐    │
-│  │                    CLI Interface                        │    │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐            │    │
-│  │  │  watch   │  │  encrypt │  │  decrypt │            │    │
-│  │  │  (service)│  │ (one-off)│  │ (one-off)│            │    │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘            │    │
-│  └───────┼─────────────┼─────────────┼───────────────────┘    │
-│          │             │             │                          │
-│          │             └─────────────┴──────────┐               │
-│          │                                      │               │
-│          ▼                                      ▼               │
-│  ┌──────────────┐      ┌─────────────┐      ┌──────────────┐  │
-│  │File Watcher  │─────▶│ FIFO Queue  │      │  Direct      │  │
-│  │  (fsnotify)  │      │(Persistent) │      │  Processor   │  │
-│  └──────────────┘      └─────────────┘      └──────────────┘  │
-│         │                     │                     │           │
-│         │              ┌──────▼──────┐             │           │
-│         │              │Retry Logic  │             │           │
-│         │              │(Exp Backoff)│             │           │
-│         │              └─────────────┘             │           │
-│         │                     │                    │           │
-│  ┌──────▼─────────────────────▼────────────────────▼───────┐  │
-│  │            Crypto Package (Envelope Encryption)          │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐              │  │
-│  │  │Encryptor │  │Decryptor │  │ Checksum │              │  │
-│  │  └────┬─────┘  └────┬─────┘  └──────────┘              │  │
-│  └───────┼─────────────┼─────────────────────────────────────┘│
-│          │             │                                       │
-│  ┌───────▼─────────────▼───────────────┐                      │
-│  │        Vault Client                  │                      │
-│  │  ┌──────────────────────────────┐   │                      │
-│  │  │  Data Key Operations         │   │                      │
-│  │  │  - Generate DEK              │   │                      │
-│  │  │  - Decrypt DEK               │   │                      │
-│  │  └──────────────────────────────┘   │                      │
-│  └───────────────┬──────────────────────┘                     │
-└──────────────────┼────────────────────────────────────────────┘
-                   │
-          ┌────────▼─────────┐
-          │  Vault Agent     │
-          │  (Listener)      │
-          │                  │
-          │  - Auto-auth     │
-          │  - Caching       │
-          │  - Token mgmt    │
-          └────────┬─────────┘
-                   │
-          ┌────────▼─────────────────────┐
-          │ HCP Vault OR Vault Enterprise│
-          │                              │
-          │  Transit Engine              │
-          │  - Primary Key               │
-          │  - Key rotation              │
-          │                              │
-          │  HCP: Token auth             │
-          │  Enterprise: Cert auth       │
-          └──────────────────────────────┘
+        subgraph Crypto["Crypto Package"]
+            Encryptor
+            Decryptor
+            Checksum
+        end
+
+        subgraph VaultClient["Vault Client"]
+            DK_Ops["Data Key Operations"]
+        end
+    end
+
+    watch --> file_watcher
+    encrypt --> processor
+    decrypt --> processor
+
+    file_watcher --> retry
+    retry --> queue
+    queue --> processor
+    
+    processor --> Encryptor
+    processor --> Decryptor
+    processor --> Checksum
+
+    Encryptor --> DK_Ops
+    Decryptor --> DK_Ops
+
+    DK_Ops --> Agent["Vault Agent"]
+    Agent --> Vault["HCP Vault / Vault Enterprise"]
 ```
 
-## Component Diagram
-
-### Core Components
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Application Layer                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  cmd/file-encryptor/main.go                                     │
-│  - CLI interface                                                │
-│  - Signal handling                                              │
-│  - Component orchestration                                      │
-│                                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│                       Business Logic Layer                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  internal/watcher/                                              │
-│  ┌─────────────┬─────────────┬──────────────┐                  │
-│  │  Watcher    │  Detector   │  Processor   │                  │
-│  │             │             │              │                  │
-│  │ - fs events │ - stability │ - orchestrate│                  │
-│  │ - filtering │ - partial   │ - encrypt    │                  │
-│  │             │   uploads   │ - decrypt    │                  │
-│  └─────────────┴─────────────┴──────────────┘                  │
-│                                                                  │
-│  internal/queue/                                                │
-│  ┌─────────────┬─────────────┬──────────────┐                  │
-│  │   Queue     │ Persistence │    Item      │                  │
-│  │             │             │              │                  │
-│  │ - FIFO      │ - save/load │ - metadata   │                  │
-│  │ - requeue   │ - atomic    │ - status     │                  │
-│  │ - backoff   │   writes    │              │                  │
-│  └─────────────┴─────────────┴──────────────┘                  │
-│                                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│                      Crypto/Security Layer                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  internal/crypto/                                               │
-│  ┌─────────────┬─────────────┬──────────────┐                  │
-│  │ Encryptor   │ Decryptor   │  Checksum    │                  │
-│  │             │             │              │                  │
-│  │ - envelope  │ - envelope  │ - SHA256     │                  │
-│  │ - AES-GCM   │ - AES-GCM   │ - verify     │                  │
-│  │ - streaming │ - streaming │              │                  │
-│  └─────────────┴─────────────┴──────────────┘                  │
-│                                                                  │
-│  internal/vault/                                                │
-│  ┌─────────────┬─────────────────────────────┐                 │
-│  │   Client    │      Data Key Ops           │                 │
-│  │             │                             │                 │
-│  │ - API calls │ - generate plaintext DEK    │                 │
-│  │ - via Agent │ - decrypt ciphertext DEK    │                 │
-│  └─────────────┴─────────────────────────────┘                 │
-│                                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│                   Infrastructure Layer                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  internal/config/                                               │
-│  ┌─────────────┬─────────────┬──────────────┐                  │
-│  │   Loader    │  Validator  │   Manager    │                  │
-│  │             │             │              │                  │
-│  │ - HCL parse │ - checks    │ - hot-reload │                  │
-│  │ - defaults  │ - dirs      │ - callbacks  │                  │
-│  └─────────────┴─────────────┴──────────────┘                  │
-│                                                                  │
-│  internal/logger/                                               │
-│  ┌─────────────┬──────────────────────────────┐                │
-│  │   Logger    │      Audit Logger            │                │
-│  │             │                              │                │
-│  │ - levels    │ - JSON events                │                │
-│  │ - plaintext │ - file output                │                │
-│  └─────────────┴──────────────────────────────┘                │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+---
 
 ## Data Flow
 
-### CLI Mode - One-off Encryption
+### Encryption Flow
 
-```
-Command: file-encryptor encrypt -i input.txt -o output.txt.enc
-     │
-     ▼
-┌─────────────────────────┐
-│  Parse CLI Arguments    │
-│  - Input file           │
-│  - Output file          │
-│  - Key file (optional)  │
-└──────┬──────────────────┘
-       │
-       ├─── Calculate Checksum (if --checksum)
-       │
-       ├─── Request Data Key from Vault
-       │    └─── POST /transit/datakey/plaintext/{key}
-       │
-       ├─── Encrypt File with Plaintext DEK
-       │    └─── Write to specified output
-       │
-       ├─── Save Ciphertext DEK
-       │    └─── Write to input.key (based on input filename)
-       │
-       ├─── Zero Plaintext DEK from Memory
-       │    ├─── DataKey.Destroy() (automatic)
-       │    └─── secure.Zero(temp_bytes)
-       │
-       └─── Exit (return 0 on success, 1 on error)
+```mermaid
+graph TD
+    NewFile(["New File"]) --> Watcher["File Watcher"]
+    Watcher -->|"Stability Check"| Queue["Enqueue Item"]
+    Queue --> FIFO[("FIFO Queue")]
+    FIFO --> Proc["Processor"]
+    
+    Proc --> Checksum{"Calc Checksum?"}
+    Checksum -- Yes --> SaveSum["Save .sha256"]
+    Checksum -- No --> ReqKey
+    SaveSum --> ReqKey["Request Data Key"]
+    
+    ReqKey -->|"POST /transit/datakey"| Vault[("Vault")]
+    Vault -->|"plaintext DEK"| Enc["Encrypt File"]
+    
+    Enc -->|"Write .enc"| Dest[("Destination")]
+    Enc -->|"Save .key"| SaveKey["Save Ciphertext DEK"]
+    
+    SaveKey --> Zero["Zero Plaintext DEK"]
+    Zero --> HandleSource{"Handle Source"}
+    
+    HandleSource -->|"Archive"| Archive["Move to archive/"]
+    HandleSource -->|"Delete"| Delete["Remove file"]
 ```
 
-### CLI Mode - One-off Decryption
+### Decryption Flow
 
-```
-Command: file-encryptor decrypt -i input.txt.enc -k input.txt.key -o output.txt
-     │
-     ▼
-┌─────────────────────────┐
-│  Parse CLI Arguments    │
-│  - Encrypted file       │
-│  - Key file             │
-│  - Output file          │
-└──────┬──────────────────┘
-       │
-       ├─── Read Ciphertext DEK from key file
-       │
-       ├─── Decrypt DEK with Vault
-       │    └─── POST /transit/decrypt/{key}
-       │
-       ├─── Decrypt File with Plaintext DEK
-       │    └─── Write to specified output
-       │
-       ├─── Verify Checksum (if --verify-checksum)
-       │
-       ├─── Zero Plaintext DEK from Memory
-       │    ├─── DataKey.Destroy() (automatic)
-       │    └─── secure.Zero(temp_bytes)
-       │
-       └─── Exit (return 0 on success, 1 on error)
+```mermaid
+graph TD
+    NewPair(["Encrypted Pair Detected"]) --> Watcher["File Watcher"]
+    Watcher --> Queue["Enqueue Item"]
+    Queue --> FIFO[("FIFO Queue")]
+    FIFO --> Proc["Processor"]
+    
+    Proc --> ReadKey["Read .key file"]
+    ReadKey --> DecKey["Decrypt DEK"]
+    
+    DecKey -->|"POST /transit/decrypt"| Vault[("Vault")]
+    Vault -->|"plaintext DEK"| DecFile["Decrypt File"]
+    
+    DecFile --> Verify{"Verify Checksum?"}
+    Verify -- Yes --> CompSum["Compare .sha256"]
+    Verify -- No --> Zero
+    CompSum --> Zero["Zero Plaintext DEK"]
+    
+    Zero --> HandleSource{"Handle Source"}
+    HandleSource -->|"Archive"| Archive["Move to archive/"]
+    HandleSource -->|"Delete"| Delete["Remove files"]
 ```
 
-### Service Mode - Encryption Flow
-
-```
-1. New File Detected (or Pre-existing File Scanned)
-   ┌──────────────┐
-   │ Source File  │
-   │  (plaintext) │
-   └──────┬───────┘
-          │
-          ▼
-   ┌──────────────┐
-   │File Watcher  │ ─── On startup: scans for pre-existing files
-   │              │ ─── Ongoing: watches for new files (fsnotify)
-   │              │ ─── Checks stability (1s no size change)
-   └──────┬───────┘
-          │
-          ▼
-   ┌──────────────┐
-   │ Enqueue Item │ ─── Creates queue item with metadata
-   └──────┬───────┘
-          │
-          ▼
-   ┌──────────────┐
-   │ FIFO Queue   │ ─── Thread-safe, persistent
-   └──────┬───────┘
-          │
-          ▼
-   ┌──────────────┐
-   │  Processor   │ ─── Dequeues and processes
-   └──────┬───────┘
-          │
-          ├─── Calculate Checksum (optional)
-          │    └─── SHA256 → save to .sha256
-          │
-          ├─── Request Data Key from Vault
-          │    └─── POST /transit/datakey/plaintext/{key}
-          │         Returns: {plaintext_dek, ciphertext_dek}
-          │
-          ├─── Encrypt File with Plaintext DEK
-          │    ├─── Read source in 64KB chunks
-          │    ├─── Encrypt with AES-256-GCM
-          │    ├─── Log progress every 20%
-          │    └─── Write to destination.enc
-          │
-          ├─── Save Ciphertext DEK
-          │    └─── Write to source.key (based on original filename)
-          │
-          ├─── Zero Plaintext DEK from Memory
-          │    ├─── DataKey.Destroy() (automatic)
-          │    └─── secure.Zero(dek_bytes) for temp bytes
-          │
-          └─── Handle Source File
-              ├─── Archive: Move to archive/
-               └─── Delete: Remove file
-```
-
-### Service Mode - Decryption Flow
-
-```
-1. Encrypted File Pair Detected (or Pre-existing Pair Scanned)
-   ┌──────────────┬──────────────┐
-   │ File.enc     │  File.key    │
-   └──────┬───────┴──────┬───────┘
-          │              │
-          ▼              ▼
-   ┌─────────────────────────┐
-   │   File Watcher          │ ─── On startup: scans for pre-existing pairs
-   │                         │ ─── Ongoing: watches for new pairs
-   └──────┬──────────────────┘
-          │
-          ▼
-   ┌─────────────────────────┐
-   │   Enqueue Item          │
-   └──────┬──────────────────┘
-          │
-          ▼
-   ┌─────────────────────────┐
-   │   FIFO Queue            │
-   └──────┬──────────────────┘
-          │
-          ▼
-   ┌─────────────────────────┐
-   │   Processor             │
-   └──────┬──────────────────┘
-          │
-          ├─── Read Ciphertext DEK from .key file
-          │
-          ├─── Decrypt DEK with Vault
-          │    └─── POST /transit/decrypt/{key}
-          │         Input: ciphertext_dek
-          │         Returns: plaintext_dek
-          │
-          ├─── Decrypt File with Plaintext DEK
-          │    ├─── Read encrypted file in chunks
-          │    ├─── Decrypt with AES-256-GCM
-          │    ├─── Log progress every 20%
-          │    └─── Write to destination
-          │
-          ├─── Verify Checksum (optional)
-          │    └─── Compare with .sha256 file
-          │
-          ├─── Zero Plaintext DEK from Memory
-          │    ├─── DataKey.Destroy() (automatic)
-          │    └─── secure.Zero(temp_bytes)
-          │
-          └─── Handle Source Files
-               ├─── Archive: Move .enc and .key to .archive/
-               └─── Delete: Remove .enc and .key files
-```
-
-## Error Handling and Retry Logic
-
-### Retry Strategy
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Error Handling Flow                          │
-└─────────────────────────────────────────────────────────────────┘
-
-Processing Attempt
-      │
-      ├─── Success? ───▶ Mark Complete ───▶ Handle Source File
-      │
-      └─── Failure
-           │
-           ├─── Check Retry Count
-           │    │
-           │    ├─── < Max Retries?
-           │    │    │
-           │    │    ├─── Calculate Backoff
-           │    │    │    └─── delay = base_delay * 2^attempts
-           │    │    │         (capped at max_delay)
-           │    │    │
-           │    │    ├─── Mark Failed
-           │    │    │    └─── Set next_retry = now + delay
-           │    │    │
-           │    │    └─── Requeue to end of FIFO
-           │    │
-           │    └─── >= Max Retries
-           │         │
-           │         ├─── Mark as DLQ
-           │         │
-           │         └─── Move to .dlq/ folder
-           │
-           └─── Move to .failed/ folder
-```
-
-### Exponential Backoff Example
-
-```
-Attempt 1: base_delay = 1s
-Attempt 2: 1s * 2^1 = 2s
-Attempt 3: 1s * 2^2 = 4s
-Attempt 4: 1s * 2^3 = 8s
-Attempt 5: 1s * 2^4 = 16s
-...
-Capped at: max_delay = 5m
-```
-
-## File Organization
-
-### Directory Structure
-
-```
-Source Directory (Encryption)
-/data/source/
-├── file1.txt          ← New files dropped here
-├── file2.pdf
-├── archive/           ← Archived originals (configurable)
-│   └── file0.txt
-├── failed/            ← Failed files
-└── dlq/               ← Dead letter queue
-
-Destination Directory (Encryption)
-/data/encrypted/
-├── file1.txt.enc      ← Encrypted file
-├── file1.txt.key      ← Encrypted DEK (Vault ciphertext)
-├── file1.txt.sha256   ← Checksum (optional)
-├── file2.pdf.enc
-├── file2.pdf.key
-└── file2.pdf.sha256
-
-Source Directory (Decryption)
-/data/encrypted/       ← Watch for .enc + .key pairs
-└── archive/           ← Archived encrypted files
-
-Destination Directory (Decryption)
-/data/decrypted/
-├── file1.txt          ← Decrypted plaintext
-└── file2.pdf
-```
+---
 
 ## Security Architecture
 
-### Key Management
+### Envelope Encryption
 
+The application uses envelope encryption, a best practice for securing data at scale:
+
+1. **Primary Key** — Stored securely in Vault, never leaves the HSM/server
+2. **Data Encryption Key (DEK)** — Generated per-file, used locally for encryption
+3. **Ciphertext DEK** — The DEK encrypted by the primary key, safe to store
+
+```mermaid
+graph TD
+    Primary["Primary Key (Vault Transit)"]
+    
+    Primary -->|"Encrypts/Decrypts"| DEK1["Data Encryption Key 1"]
+    Primary --> DEK2["Data Encryption Key 2"]
+    Primary --> DEK_More["Data Encryption Key N..."]
+    
+    DEK1 --> Plaintext["Plaintext DEK (in memory only)"]
+    DEK1 --> Ciphertext["Ciphertext DEK (stored in .key file)"]
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Key Hierarchy (Envelope Encryption)           │
-└─────────────────────────────────────────────────────────────────┘
-
-Primary Key (Vault Transit)
-     │
-     │  Never leaves Vault
-     │  Stored in Vault's secure storage
-     │  Used to encrypt/decrypt DEKs
-     │
-     ├─── Data Encryption Key 1 (DEK)
-     │    │
-     │    ├─── Plaintext DEK
-     │    │    - Generated by Vault
-     │    │    - Used locally for file encryption
-     │    │    - Protected by DataKey (secure zeroing)
-     │    │    - Zeroed from memory after use (constant-time via crypto/subtle)
-     │    │    - Locked in memory via mlock to prevent swapping (Unix/Linux/macOS)
-     │    │    - Never persisted to disk
-     │    │
-     │    └─── Ciphertext DEK
-     │         - Encrypted with Primary Key
-     │         - Stored in .key file
-     │         - Safe to persist
-     │
-     ├─── Data Encryption Key 2
-     └─── Data Encryption Key N...
-```
-
-### Security Features
-
-1. **Envelope Encryption**: Primary key never leaves Vault
-2. **Memory Security**: 
-   - **DataKey**: Securely stores plaintext keys as `[]byte`
-   - **secure.Zero**: Constant-time zeroing provided by `go-fileencrypt`
-   - Memory locking via `mlock` (handled by library where applicable)
-   - Immediate zeroing after use with `defer dataKey.Destroy()`
-3. **Cryptographic Protection** (via `go-fileencrypt`):
-   - AES-256-GCM authenticated encryption
-   - Secure, versioned file format with magic headers and salt
-   - Unique nonce per chunk (managed by library)
-   - File metadata authenticated via GCM additional data
-4. **DOS Prevention**:
-   - Chunk size validation (prevents memory exhaustion)
-   - Streaming processing (low memory footprint)
-5. **In-Transit Protection**: Files encrypted before storage
-6. **Audit Logging**: All operations logged
-7. **Certificate Auth**: Mutual TLS with Vault (Enterprise)
-8. **Response Caching**: Vault Agent caches for performance
-9. **Checksum Verification**: SHA-256 integrity validation
 
 ### Encrypted File Format
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                   Encrypted File Structure                       │
-└─────────────────────────────────────────────────────────────────┘
-
-.enc File (Managed by `go-fileencrypt`):
+.enc File:
 ┌──────────────┬─────────┬──────────────┬──────────────┬─────┐
 │ Magic Header │ Version │ Salt         │ Chunk1       │ ... │
 │ (4 bytes)    │ (1 byte)│ (32 bytes)   │ (ciphertext) │     │
 └──────────────┴─────────┴──────────────┴──────────────┴─────┘
      │              │           │              │
      │              │           │              └─ Encrypted with AES-256-GCM
-     │              │           └──────────────── Argon2id/PBKDF2 salt (unused for Vault keys)
+     │              │           └──────────────── Argon2id/PBKDF2 salt
      │              └──────────────────────────── Format version (v1)
      └─────────────────────────────────────────── File signature
 
 .key File:
 vault:v{version}:{base64-encrypted-DEK}
-
-Notes:
-- File format is opaque and managed by `go-fileencrypt` library
-- Ensures forward compatibility and secure defaults
-- Default chunk size: 1MB (configurable)
 ```
 
-### Security Guarantees
+### Security Features
 
-**Confidentiality**:
-- AES-256-GCM encryption with 256-bit keys
-- Unique nonce per chunk (cryptographically guaranteed)
-- DEK protected by Vault's primary key
-
-**Integrity**:
-- GCM authentication tag per chunk (128-bit)
-- File metadata (size) authenticated
-- Optional SHA-256 checksum for end-to-end verification
-
-**Memory Safety**:
-- **DataKey**: Stores keys as `[]byte` and zeroes them on destruction
-- Constant-time memory operations (prevents timing attacks)
-- Memory locking prevents keys in swap files (Unix/Linux/macOS via `mlock`)
-- Platform-specific implementations for cross-platform support
-- Automatic zeroing on scope exit (defer pattern with `buf.Destroy()`)
-- No-op memory locking on Windows (mlock not available)
-
-**DOS Resistance**:
-- Chunk size validation (prevents memory exhaustion)
-- File size limits (prevents resource exhaustion)
-- Nonce overflow detection (prevents cryptographic failure)
-
-## Configuration Management
-
-### Hot Reload Mechanism
-
-```
-SIGHUP Signal
-     │
-     ▼
-┌─────────────────┐
-│ Config Manager  │
-└────────┬────────┘
-         │
-         ├─── Load New Config from Disk
-         │
-         ├─── Validate New Config
-         │    │
-         │    ├─── Valid?
-         │    │    │
-         │    │    └─── Apply
-         │    │         │
-         │    │         ├─── Swap Current Config
-         │    │         │
-         │    │         └─── Notify Callbacks
-         │    │              ├─── Update Vault Client
-         │    │              ├─── Update Watcher Paths
-         │    │              ├─── Update Queue Settings
-         │    │              └─── Update Logger Level
-         │    │
-         │    └─── Invalid?
-         │         └─── Keep Current Config
-         │              Log Error
-         │
-         └─── Continue Running (No Restart)
-```
-
-## Graceful Shutdown
-
-```
-SIGTERM/SIGINT Signal
-     │
-     ▼
-┌─────────────────┐
-│ Signal Handler  │
-└────────┬────────┘
-         │
-         ├─── Stop File Watcher
-         │    └─── No new files accepted
-         │
-         ├─── Cancel Context
-         │    └─── All goroutines receive cancel
-         │
-         ├─── Current File Processing
-         │    └─── DO NOT wait for completion
-         │         └─── Interrupt immediately
-         │
-         ├─── Save Queue State
-         │    ├─── Marshal all queue items to JSON
-         │    ├─── Atomic write to state file
-         │    └─── Includes retry metadata
-         │
-         ├─── Sync Logs
-         │    └─── Flush buffers
-         │
-         └─── Exit
-              └─── On restart: Queue state is restored
-```
-
-## Performance Considerations
-
-### Streaming Encryption
-
-- Files processed in 1MB chunks
-- Prevents memory exhaustion on large files
-- Progress reported every 20%
-
-### Concurrency
-
-- Single processor (sequential processing)
-- Thread-safe queue for scaling
-- Could add worker pool if needed
-
-### Vault Agent Benefits
-
-- Local caching reduces latency
-- Auto-token renewal
-- Connection pooling
-
-## Scalability
-
-### Current Design
-
-- Single instance processes files sequentially
-- Queue persists state for reliability
-- Suitable for moderate file volumes
-
-### Enhancements
-
-- Worker pool for parallel processing
-- Distributed queue (Redis, RabbitMQ)
-- Horizontal scaling with multiple instances
-- Metrics and monitoring (Prometheus)
-
-## Deployment Architecture
-
-### HCP Vault Deployment
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Production Deployment (HCP)                   │
-└─────────────────────────────────────────────────────────────────┘
-
-Host/VM
-├── file-encryptor (systemd service)
-│   ├── Config: /etc/file-encryptor/config.hcl
-│   ├── State: /var/lib/file-encryptor/queue-state.json
-│   └── Logs: /var/log/file-encryptor/
-│
-├── vault-agent (systemd service)
-│   ├── Config: /etc/vault-agent/config.hcl
-│   ├── Auth: Token-based
-│   └── Listener: 127.0.0.1:8200
-│
-└── Network
-    ├── Vault Agent → HCP Vault (HTTPS, token auth)
-    └── file-encryptor → Vault Agent (HTTP localhost)
-```
-
-### Vault Enterprise Deployment
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              Production Deployment (Vault Enterprise)            │
-└─────────────────────────────────────────────────────────────────┘
-
-Host/VM
-├── file-encryptor (systemd service)
-│   ├── Config: /etc/file-encryptor/config.hcl
-│   ├── State: /var/lib/file-encryptor/queue-state.json
-│   └── Logs: /var/log/file-encryptor/
-│
-├── vault-agent (systemd service)
-│   ├── Config: /etc/vault-agent/config.hcl
-│   ├── Certs: /etc/vault-agent/certs/
-│   ├── Auth: Certificate-based
-│   └── Listener: 127.0.0.1:8210
-│
-└── Network
-    ├── Vault Agent → Vault Enterprise (HTTPS, cert auth)
-    └── file-encryptor → Vault Agent (HTTP localhost)
-```
-
-### Development Setup (Vault Enterprise Dev Mode)
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              Development Setup (Local Vault)                     │
-└─────────────────────────────────────────────────────────────────┘
-
-Localhost
-├── vault server -dev (port 8200)
-│   ├── In-memory storage
-│   ├── Auto-unsealed
-│   └── Root token provided
-│
-├── vault-agent (foreground)
-│   ├── Config: configs/vault-agent/vault-agent-enterprise-dev.hcl
-│   ├── Certs: scripts/test-certs/
-│   └── Listener: 127.0.0.1:8210
-│
-└── file-encryptor (foreground)
-    └── Config: configs/examples/example-enterprise.hcl
-```
-
-## Design Decisions
-
-### Why Envelope Encryption?
-
-- **Scalability**: Local encryption, remote key management
-- **Performance**: No 32MB file size limit
-- **Security**: Primary key never leaves Vault
-- **Efficiency**: Minimal network traffic
-
-### Why FIFO Queue?
-
-- **Order Preservation**: Files processed in order
-- **Retry Logic**: Failed items go to back of queue
-- **Persistence**: State survives crashes/restarts
-- **Simplicity**: Easy to reason about and debug
-
-### Why Vault Agent?
-
-- **Authentication**: Automatic auth
-- **Caching**: Reduced latency and load on Vault
-- **Token Management**: Auto-renewal
-- **Resilience**: Local proxy for Vault
-- **Abstraction**: Application doesn't need to know about auth methods
-
-### Why HCL Configuration?
-
-- **Readability**: Clear, human-friendly syntax
-- **Ecosystem**: Native to HashiCorp tools
-- **Validation**: Strong typing support
-- **Hot Reload**: Easy to reload without restart
-
-## Monitoring and Observability
-
-### Logs
-
-- **Application Log**: All operations, errors
-- **Audit Log**: Security events (JSON)
-- **Progress Log**: File processing updates
-
-### Metrics
-
-- Files processed per second
-- Queue depth
-- Retry rate
-- Error rate
-- Processing latency
-
-### Health Checks
-
-- Vault connectivity
-- File system accessibility
-- Queue state validity
+| Feature | Description |
+|---------|-------------|
+| **AES-256-GCM** | Authenticated encryption with 256-bit keys |
+| **Unique DEK per file** | Limits blast radius if a key is compromised |
+| **Memory zeroing** | Plaintext keys are securely zeroed after use |
+| **Integrity verification** | GCM authentication tags and optional SHA-256 checksums |
+| **Vault Agent** | Local proxy for caching, authentication, and token renewal |
 
 ---
 
-**Confidence: 98%** - Architecture is comprehensive and production-ready!
+## Error Handling
+
+### Retry Strategy
+
+Failed operations are automatically retried with exponential backoff:
+
+```mermaid
+graph TD
+    Attempt["Processing Attempt"] --> Check{"Success?"}
+    Check -- Yes --> Complete["Mark Complete"] --> Handle["Handle Source File"]
+    Check -- No --> Count{"Check Retry Count"}
+    
+    Count -->|"< Max Retries"| Calc["Calculate Backoff"]
+    Calc --> Delay["delay = base * 2^attempts"]
+    Delay --> Fail["Mark Failed"]
+    Fail --> Requeue["Requeue to end of FIFO"]
+    
+    Count -->|">= Max Retries"| DLQ["Mark as DLQ"]
+    DLQ --> MoveDLQ["Move to .dlq/ folder"]
+```
+
+### Dead Letter Queue
+
+Files that fail after all retries are moved to the `.dlq/` directory for manual investigation.
+
+---
+
+## Deployment
+
+### HCP Vault
+
+```mermaid
+graph TD
+    subgraph Host["Host/VM"]
+        FE["file-encryptor (systemd)"]
+        VA["vault-agent (systemd)"]
+        
+        FE -- "HTTP localhost" --> VA
+    end
+    
+    VA -- "HTTPS + Token" --> HCP["HCP Vault"]
+```
+
+### Vault Enterprise
+
+```mermaid
+graph TD
+    subgraph Host["Host/VM"]
+        FE["file-encryptor (systemd)"]
+        VA["vault-agent (systemd)"]
+        
+        FE -- "HTTP localhost" --> VA
+    end
+    
+    VA -- "HTTPS + Cert" --> Ent["Vault Enterprise"]
+```
+
+---
+
+## Configuration
+
+### Hot Reload
+
+Configuration changes can be applied without restarting the service by sending a `SIGHUP` signal:
+
+```bash
+kill -HUP $(pidof file-encryptor)
+```
+
+The application will:
+1. Load and validate the new configuration
+2. Apply changes if valid (or keep the current config if invalid)
+3. Update all affected components (Vault client, watcher paths, queue settings)
+
+### Graceful Shutdown
+
+On receiving `SIGTERM` or `SIGINT`, the application:
+
+1. Stops accepting new files
+2. Saves the current queue state to disk
+3. Flushes logs
+4. Exits cleanly
+
+On restart, the queue state is restored and processing resumes.
+
+---
+
+## Performance
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Streaming** | Files processed in 1MB chunks to limit memory usage |
+| **Caching** | Vault Agent caches responses to reduce latency |
+| **Sequential Processing** | Single processor ensures predictable ordering |
+| **Progress Reporting** | Updates logged every 20% for large files |

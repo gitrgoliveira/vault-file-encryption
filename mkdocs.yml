@@ -1,0 +1,103 @@
+site_name: Vault File Encryption
+site_description: Securely encrypt and decrypt files using HashiCorp Vault Transit secrets engine. A modern CLI tool for file-based encryption with key rotation support.
+site_author: gitrgoliveira
+site_url: https://gitrgoliveira.github.io/vault-file-encryption/
+repo_url: https://github.com/gitrgoliveira/vault-file-encryption
+repo_name: gitrgoliveira/vault-file-encryption
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2024 gitrgoliveira
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+    - search.share
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Vault Setup: guides/VAULT_SETUP_GUIDE.md
+    - Vault Setup (Windows): guides/VAULT_SETUP_GUIDE_WINDOWS.md
+    - Vault Enterprise: guides/VAULT_ENTERPRISE_SETUP_GUIDE.md
+  - User Guide:
+    - CLI Usage: guides/CLI_MODE.md
+    - CLI Usage (Windows): guides/CLI_MODE_WINDOWS.md
+    - Key Rewrapping: guides/REWRAP_GUIDE.md
+    - Performance Tuning: guides/CHUNK_SIZE_TUNING.md
+  - Reference:
+    - Architecture: ARCHITECTURE.md
+    - Migration Guide: MIGRATION_GUIDE.md
+  - Contributing: CONTRIBUTING.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/gitrgoliveira/vault-file-encryption
+      name: GitHub Repository
+  generator: false
+
+extra_css:
+  - stylesheets/extra.css

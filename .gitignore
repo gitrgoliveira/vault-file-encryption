@@ -41,7 +41,6 @@ config.hcl
 vault-agent.hcl
 !configs/example.hcl
 !configs/vault-agent-dev.hcl
-docs/LIBRARY_EXTRACTION_PLAN.md
 
 # Certificates (except examples)
 *.pem
@@ -87,3 +86,4 @@ coverage.html
 *.enc
 *.txt
 *.sha256
+site/
