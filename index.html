@@ -1,0 +1,2949 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Securely encrypt and decrypt files using HashiCorp Vault Transit secrets engine. A modern CLI tool for file-based encryption with key rotation support.">
+      
+      
+        <meta name="author" content="gitrgoliveira">
+      
+      
+        <link rel="canonical" href="https://gitrgoliveira.github.io/vault-file-encryption/">
+      
+      
+      
+        <link rel="next" href="guides/VAULT_SETUP_GUIDE/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Vault File Encryption</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="stylesheets/extra.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#vault-file-encryption" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="Vault File Encryption" class="md-header__button md-logo" aria-label="Vault File Encryption" data-md-component="logo">
+      
+  <img src="assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Vault File Encryption
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Home
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gitrgoliveira/vault-file-encryption" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    gitrgoliveira/vault-file-encryption
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="guides/VAULT_SETUP_GUIDE/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="guides/CLI_MODE/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="ARCHITECTURE/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="CONTRIBUTING/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="Vault File Encryption" class="md-nav__button md-logo" aria-label="Vault File Encryption" data-md-component="logo">
+      
+  <img src="assets/logo.svg" alt="logo">
+
+    </a>
+    Vault File Encryption
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gitrgoliveira/vault-file-encryption" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    gitrgoliveira/vault-file-encryption
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#high-level-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Level Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="High-Level Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#encryption-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Encryption Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-diagram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow Diagram
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-build-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Build the Application
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-set-up-vault" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Set Up Vault
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-start-vault-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Start Vault Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-encrypt-a-file-cli-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Encrypt a File (CLI Mode)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-run-service-mode-watch-directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Run Service Mode (Watch Directories)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#download-pre-built-binaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download Pre-built Binaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build from Source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#minimal-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vault-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vault Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chunk-size-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chunk Size Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hot-reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hot Reload
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-line-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command-Line Interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-mode-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service Mode Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-mode-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Mode Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vault-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vault Policies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Documentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Guides
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup Guides
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-specific-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform-Specific Notes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Platform-Specific Notes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linuxmacos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux/macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cryptographic-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cryptographic Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dos-prevention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DOS Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infrastructure-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Infrastructure Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-format-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Format Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quality-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality and Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quality and Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-validations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Validations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/VAULT_SETUP_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/VAULT_SETUP_GUIDE_WINDOWS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Setup (Windows)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/VAULT_ENTERPRISE_SETUP_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Enterprise
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/CLI_MODE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/CLI_MODE_WINDOWS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Usage (Windows)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/REWRAP_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Rewrapping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/CHUNK_SIZE_TUNING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="MIGRATION_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#high-level-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Level Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="High-Level Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#encryption-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Encryption Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-diagram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow Diagram
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-build-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Build the Application
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-set-up-vault" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Set Up Vault
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-start-vault-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Start Vault Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-encrypt-a-file-cli-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Encrypt a File (CLI Mode)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-run-service-mode-watch-directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Run Service Mode (Watch Directories)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#download-pre-built-binaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download Pre-built Binaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build from Source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#minimal-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vault-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vault Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chunk-size-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chunk Size Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hot-reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hot Reload
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-line-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command-Line Interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-mode-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service Mode Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-mode-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Mode Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vault-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vault Policies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Documentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Guides
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup Guides
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-specific-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform-Specific Notes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Platform-Specific Notes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linuxmacos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux/macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cryptographic-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cryptographic Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dos-prevention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DOS Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infrastructure-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Infrastructure Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-format-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Format Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quality-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality and Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quality and Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-validations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Validations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="vault-file-encryption">Vault File Encryption<a class="headerlink" href="#vault-file-encryption" title="Permanent link">&para;</a></h1>
+<p><a href="https://github.com/gitrgoliveira/vault-file-encryption/actions"><img alt="Build Status" src="https://github.com/gitrgoliveira/vault-file-encryption/workflows/Build%20and%20Test/badge.svg" /></a>
+<a href="https://goreportcard.com/report/github.com/gitrgoliveira/vault-file-encryption"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/gitrgoliveira/vault-file-encryption" /></a></p>
+<p>This application is an MVP that watches directories for files, encrypts them using HashiCorp Vault Transit Engine with envelope encryption, and stores the encrypted files in a separate folder. Works with both <strong>HCP Vault (cloud)</strong> and <strong>Vault Enterprise (self-hosted)</strong>.</p>
+<blockquote>
+<p>[!WARNING]
+<strong>v1.0.0 Breaking Changes</strong>: This version introduces a new encrypted file format using the <code>go-fileencrypt</code> library. Files encrypted with previous versions are <strong>not compatible</strong>. See <a href="MIGRATION_GUIDE/">MIGRATION_GUIDE.md</a> for upgrade instructions.</p>
+</blockquote>
+<h2 id="high-level-overview">High-Level Overview<a class="headerlink" href="#high-level-overview" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph TD
+    subgraph Inputs
+        FW[File Watcher]
+        CLI[CLI]
+    end
+
+    FW --&gt;|Service Mode| Q[FIFO Queue]
+    Q --&gt; PROC[Processor]
+    CLI --&gt;|CLI Mode| PROC
+
+    PROC --&gt; VA[Vault Agent&lt;br/&gt;local listener]
+    VA --&gt; VTE[Vault Transit&lt;br/&gt;Engine]</code></pre>
+<h3 id="encryption-flow">Encryption Flow<a class="headerlink" href="#encryption-flow" title="Permanent link">&para;</a></h3>
+<ol>
+<li>File appears in source directory</li>
+<li>Watcher detects and queues file</li>
+<li>Processor generates data key via Vault</li>
+<li>File encrypted with AES-256-GCM using data key</li>
+<li>Data key encrypted with Vault Transit key</li>
+<li>Encrypted file and key saved to destination</li>
+<li>Original file archived or deleted</li>
+</ol>
+<h3 id="workflow-diagram">Workflow Diagram<a class="headerlink" href="#workflow-diagram" title="Permanent link">&para;</a></h3>
+<p>The diagram below shows both the continuous Service Mode path (through watcher + queue) and the one-off CLI Mode path (direct to processor). The processor handles both encryption and decryption via strategy pattern. Re-wrap and key version audit operations are shown separately as they only work with <code>.key</code> files.</p>
+<pre class="mermaid"><code>flowchart TB
+  subgraph ServiceMode[Service Mode - watch]
+    SRC["Source Directory (plaintext for encryption or .enc+.key pairs for decryption)"]
+    SRC --&gt; W[File Watcher fsnotify + startup scan]
+    W --&gt; D[Stability Check size settle detection]
+    D --&gt; Q[FIFO Queue retries + persistence]
+  end
+
+  subgraph CLIMode[CLI Mode - one-off]
+    CLI["CLI Command encrypt | decrypt"]
+  end
+
+  Q --&gt; PROC
+  CLI --&gt; PROC
+
+  PROC[Processor strategy: Encrypt or Decrypt]
+
+  PROC --&gt;|Encryption| ENC_FLOW{Encryption Flow}
+  PROC --&gt;|Decryption| DEC_FLOW{Decryption Flow}
+
+  ENC_FLOW --&gt;|1. Request DEK| V1[(Vault Transit/datakey/plaintext)]
+  V1 --&gt;|plaintext + ciphertext DEK| ENC_FLOW
+  ENC_FLOW --&gt;|2. Encrypt with DEK| ENC_OUT["Output Files"]
+  ENC_OUT --&gt; ENC_FILE["file.enc AES-256-GCM chunks"]
+  ENC_OUT --&gt; KEY_FILE["file.key ciphertext DEK"]
+  ENC_OUT --&gt;|optional| HASH_FILE["file.sha256 checksum"]
+
+  DEC_FLOW --&gt;|1. Read ciphertext DEK| KEY_FILE
+  DEC_FLOW --&gt;|2. Decrypt DEK| V2[(Vault Transit/decrypt)]
+  V2 --&gt;|plaintext DEK| DEC_FLOW
+  DEC_FLOW --&gt;|3. Decrypt file| PLAIN["file plaintext"]
+
+  ENC_FILE -.-&gt;|becomes source for decryption| SRC
+  KEY_FILE -.-&gt;|paired with .enc| SRC
+
+  PROC --&gt;|Success| CLEANUP[Post-Process archive or delete originals]
+
+  subgraph KeyMaint[Key Maintenance - separate operations]
+    REWRAP[rewrap command rotate to newer key version]
+    AUDIT[key-versions command offline audit, no Vault]
+  end
+
+  REWRAP --&gt;|read| KEY_FILE
+  REWRAP --&gt;|call| V3[(Vault Transit/rewrap)]
+  V3 --&gt;|update| KEY_FILE
+  AUDIT --&gt;|read only| KEY_FILE
+
+  classDef vault fill:#502d7f,stroke:#333,stroke-width:2px,color:#fff;
+  class V1,V2,V3 vault;
+
+  classDef files fill:#0b5d8a,stroke:#0b5d8a,stroke-width:2px,color:#fff;
+  class ENC_FILE,KEY_FILE,HASH_FILE,PLAIN files;
+
+  classDef process fill:#176c3a,stroke:#0b4a26,stroke-width:2px,color:#fff;
+  class PROC,Q,W,D,CLEANUP process;
+
+  classDef decision fill:#d97706,stroke:#92400e,stroke-width:2px,color:#fff;
+  class ENC_FLOW,DEC_FLOW decision;
+
+  classDef cli fill:#aa5a00,stroke:#6d3a00,stroke-width:2px,color:#fff;
+  class CLI,REWRAP,AUDIT cli;</code></pre>
+<p>Key points:
+- Service Mode always passes through the watcher and queue, ensuring ordering, retries, and persistence.
+- CLI Mode bypasses watcher/queue for immediate single-file processing.
+- <code>.key</code> files store only ciphertext DEKs; plaintext keys never hit disk.
+- Re-wrap updates <code>.key</code> files to newer Vault key versions without touching <code>.enc</code> data.
+- Key version auditing (<code>key-versions</code>) runs offline (no Vault calls).</p>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>File System Watching</strong>: Automatic detection of new files with <code>fsnotify</code></li>
+<li><strong>Envelope Encryption</strong>: Uses Vault Transit Engine for secure key management</li>
+<li><strong>Bidirectional</strong>: Support for both encryption and decryption modes</li>
+<li><strong>Progress Logging</strong>: Real-time progress updates every 20%</li>
+<li><strong>Retry Logic</strong>: FIFO queue with exponential backoff</li>
+<li><strong>Integrity Verification</strong>: Optional SHA256 checksum validation</li>
+<li><strong>Hot Reload</strong>: Configuration changes without restart (SIGHUP on Unix)</li>
+<li><strong>Enhanced Security</strong> (via <a href="https://github.com/gitrgoliveira/go-fileencrypt"><code>go-fileencrypt</code></a>): </li>
+<li>Constant-time memory zeroing (prevents compiler optimization)</li>
+<li>Memory locking (prevents key swapping to disk)</li>
+<li>Authenticated encryption with AES-256-GCM</li>
+<li>Secure, versioned file format with magic headers and salt</li>
+<li>Chunk size validation (prevents DOS attacks)</li>
+<li><strong>Cross-Platform</strong>: Binaries for macOS, Windows, Linux (64-bit)</li>
+<li><strong>Comprehensive Logging</strong>: Plaintext or JSON format with audit support</li>
+<li><strong>CLI Mode</strong>: One-off encryption/decryption operations</li>
+<li><strong>Configurable Chunk Size</strong>: Optimize encryption for file size (64KB-10MB)</li>
+<li><strong>Key Re-wrapping</strong>: Rotate encrypted DEKs to newer Vault key versions without re-encrypting data</li>
+<li><strong>Flexible Vault Authentication</strong>: Multiple auth methods supported - Token, AppRole, Kubernetes, JWT, TLS Certificate, or using Vault Agent</li>
+</ul>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#quick-start">Quick Start</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#usage">Usage</a></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#contributing">Contributing</a></li>
+<li><a href="#license">License</a></li>
+</ul>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Go 1.25.0+</strong> (for building from source)</li>
+<li><strong>Vault</strong>: One of the following:</li>
+<li><strong>HCP Vault</strong> cluster with Transit Engine enabled, OR</li>
+<li><strong>Vault Enterprise</strong> (or Community Edition) for local development</li>
+<li><strong>Authentication</strong>: Choose one of:</li>
+<li><strong>Vault Agent</strong> (recommended for production) - handles authentication automatically</li>
+<li><strong>Direct authentication</strong> - Token, AppRole, Kubernetes, JWT, or TLS Certificate</li>
+<li>See <a href="#vault-authentication">Vault Authentication</a> section for configuration details</li>
+</ul>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<h3 id="1-build-the-application">1. Build the Application<a class="headerlink" href="#1-build-the-application" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/gitrgoliveira/vault-file-encryption.git
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>vault-file-encryption
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>make<span class="w"> </span>build
+</span></code></pre></div>
+<h3 id="2-set-up-vault">2. Set Up Vault<a class="headerlink" href="#2-set-up-vault" title="Permanent link">&para;</a></h3>
+<p>Choose your Vault deployment:</p>
+<p><strong>Option A: HCP Vault (Cloud)</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Follow the HCP Vault setup guide</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># See: guides/VAULT_SETUP_GUIDE.md</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nb">cd</span><span class="w"> </span>scripts/vault-setup
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>terraform<span class="w"> </span>init
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>terraform<span class="w"> </span>apply
+</span></code></pre></div></p>
+<p><strong>Option B: Vault Enterprise (Local Dev Mode)</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Follow the Vault Enterprise setup guide</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># See: guides/VAULT_ENTERPRISE_SETUP_GUIDE.md</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nb">cd</span><span class="w"> </span>scripts/vault-setup-enterprise
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./01-start-vault-dev.sh<span class="w">    </span><span class="c1"># Terminal 1</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>./02-configure-vault.sh<span class="w">    </span><span class="c1"># Terminal 2</span>
+</span></code></pre></div></p>
+<h3 id="3-start-vault-agent">3. Start Vault Agent<a class="headerlink" href="#3-start-vault-agent" title="Permanent link">&para;</a></h3>
+<p><strong>For HCP Vault</strong>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Unix/Linux/macOS</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>vault<span class="w"> </span>agent<span class="w"> </span>-config<span class="o">=</span>https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/vault-agent/vault-agent-hcp-token.hcl
+</span></code></pre></div></p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c"># Windows</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">vault</span> <span class="n">agent</span> <span class="n">-config</span><span class="p">=</span><span class="n">configs</span><span class="p">\</span><span class="n">vault-agent</span><span class="p">\</span><span class="n">vault-agent-hcp-token</span><span class="p">.</span><span class="n">hcl</span>
+</span></code></pre></div>
+<p><strong>For Vault Enterprise</strong>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Unix/Linux/macOS</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>vault<span class="w"> </span>agent<span class="w"> </span>-config<span class="o">=</span>https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/vault-agent/vault-agent-enterprise-dev.hcl
+</span></code></pre></div></p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c"># Windows</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">vault</span> <span class="n">agent</span> <span class="n">-config</span><span class="p">=</span><span class="n">configs</span><span class="p">\</span><span class="n">vault-agent</span><span class="p">\</span><span class="n">vault-agent-enterprise-dev</span><span class="p">.</span><span class="n">hcl</span>
+</span></code></pre></div>
+<h3 id="4-encrypt-a-file-cli-mode">4. Encrypt a File (CLI Mode)<a class="headerlink" href="#4-encrypt-a-file-cli-mode" title="Permanent link">&para;</a></h3>
+<p><strong>HCP Vault</strong>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Unix/Linux/macOS</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>./bin/file-encryptor<span class="w"> </span>encrypt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>-i<span class="w"> </span>myfile.txt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>-o<span class="w"> </span>myfile.txt.enc<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>-c<span class="w"> </span>https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example.hcl
+</span></code></pre></div></p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c"># Windows</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="p">.\</span><span class="n">bin</span><span class="p">\</span><span class="n">file-encryptor-windows-amd64</span><span class="p">.</span><span class="n">exe</span> <span class="n">encrypt</span> <span class="p">`</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>  <span class="n">-i</span> <span class="n">myfile</span><span class="p">.</span><span class="n">txt</span> <span class="p">`</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>  <span class="n">-o</span> <span class="n">myfile</span><span class="p">.</span><span class="n">txt</span><span class="p">.</span><span class="n">enc</span> <span class="p">`</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>  <span class="n">-c</span> <span class="n">configs</span><span class="p">\</span><span class="n">examples</span><span class="p">\</span><span class="n">example</span><span class="p">.</span><span class="n">hcl</span>
+</span></code></pre></div>
+<p><strong>Vault Enterprise</strong>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Unix/Linux/macOS</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>./bin/file-encryptor<span class="w"> </span>encrypt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>-i<span class="w"> </span>myfile.txt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span>-o<span class="w"> </span>myfile.txt.enc<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span>-c<span class="w"> </span>https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example-enterprise.hcl
+</span></code></pre></div></p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c"># Windows</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="p">.\</span><span class="n">bin</span><span class="p">\</span><span class="n">file-encryptor-windows-amd64</span><span class="p">.</span><span class="n">exe</span> <span class="n">encrypt</span> <span class="p">`</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>  <span class="n">-i</span> <span class="n">myfile</span><span class="p">.</span><span class="n">txt</span> <span class="p">`</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>  <span class="n">-o</span> <span class="n">myfile</span><span class="p">.</span><span class="n">txt</span><span class="p">.</span><span class="n">enc</span> <span class="p">`</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>  <span class="n">-c</span> <span class="n">configs</span><span class="p">\</span><span class="n">examples</span><span class="p">\</span><span class="n">example-enterprise</span><span class="p">.</span><span class="n">hcl</span>
+</span></code></pre></div>
+<p>This creates:
+- <code>myfile.txt.enc</code> - Encrypted file
+- <code>myfile.txt.key</code> - Encrypted data key</p>
+<h3 id="5-run-service-mode-watch-directories">5. Run Service Mode (Watch Directories)<a class="headerlink" href="#5-run-service-mode-watch-directories" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Unix/Linux/macOS</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>./bin/file-encryptor<span class="w"> </span>watch<span class="w"> </span>-c<span class="w"> </span>https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example.hcl
+</span></code></pre></div>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c"># Windows (hot-reload not available - restart to reload config)</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="p">.\</span><span class="n">bin</span><span class="p">\</span><span class="n">file-encryptor-windows-amd64</span><span class="p">.</span><span class="n">exe</span> <span class="n">watch</span> <span class="n">-c</span> <span class="n">configs</span><span class="p">\</span><span class="n">examples</span><span class="p">\</span><span class="n">example</span><span class="p">.</span><span class="n">hcl</span>
+</span></code></pre></div>
+<p>The service will:
+- Scan and process any pre-existing files in configured directories on startup
+- Monitor configured directories for new files (using fsnotify)
+- Queue files for processing with retry logic
+- Encrypt/decrypt files automatically
+- Save queue state on shutdown</p>
+<hr />
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<h3 id="download-pre-built-binaries">Download Pre-built Binaries<a class="headerlink" href="#download-pre-built-binaries" title="Permanent link">&para;</a></h3>
+<p>Download the latest release for your platform from the <a href="https://github.com/gitrgoliveira/vault-file-encryption/releases">Releases</a> page:</p>
+<ul>
+<li><strong>Windows (64-bit)</strong>: <code>file-encryptor-windows-amd64.exe</code></li>
+<li><strong>macOS (64-bit)</strong>: <code>file-encryptor-darwin-amd64</code></li>
+<li><strong>Linux (64-bit)</strong>: <code>file-encryptor-linux-amd64</code></li>
+</ul>
+<h3 id="build-from-source">Build from Source<a class="headerlink" href="#build-from-source" title="Permanent link">&para;</a></h3>
+<p><strong>Prerequisites</strong>:
+- Go 1.25.0 or later
+- Make (Unix/Linux/macOS) or use <code>go build</code> directly on Windows</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Unix/Linux/macOS</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/gitrgoliveira/vault-file-encryption.git
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="nb">cd</span><span class="w"> </span>vault-file-encryption
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>make<span class="w"> </span>build
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="c1"># Build for all platforms</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>make<span class="w"> </span>build-all
+</span></code></pre></div>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c"># Windows (using Git Bash or WSL for Make)</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">://</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">gitrgoliveira</span><span class="p">/</span><span class="n">vault</span><span class="o">-file</span><span class="n">-encryption</span><span class="p">.</span><span class="n">git</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="nb">cd </span><span class="n">vault</span><span class="o">-file</span><span class="n">-encryption</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">make</span> <span class="n">build-windows</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="c"># Or build directly with go</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="n">go</span> <span class="n">build</span> <span class="n">-o</span> <span class="n">bin</span><span class="p">\</span><span class="n">file-encryptor</span><span class="p">.</span><span class="n">exe</span> <span class="n">cmd</span><span class="p">/</span><span class="n">file-encryptor</span><span class="p">/</span><span class="n">main</span><span class="p">.</span><span class="n">go</span>
+</span></code></pre></div>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<h3 id="example-configuration">Example Configuration<a class="headerlink" href="#example-configuration" title="Permanent link">&para;</a></h3>
+<p>See <a href="https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example.hcl"><code>https://github.com/gitrgoliveira/vault-file-encryption/blob/main/configs/examples/example.hcl</code></a> for a complete configuration example.</p>
+<h3 id="minimal-configuration">Minimal Configuration<a class="headerlink" href="#minimal-configuration" title="Permanent link">&para;</a></h3>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">vault</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="na">agent_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;http://127.0.0.1:8200&quot;</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="na">transit_mount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;transit&quot;</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="na">key_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryption-key&quot;</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="p">}</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="nb">encryption</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span><span class="na">source_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/data/source&quot;</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span><span class="na">dest_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/data/encrypted&quot;</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">  </span><span class="na">source_file_behavior</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;archive&quot;</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">  </span><span class="na">chunk_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;2MB&quot;</span><span class="c1">  # Optional: 64KB-10MB, default 1MB</span>
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="p">}</span>
+</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>
+</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="nb">queue</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">  </span><span class="na">state_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/var/lib/file-encryptor/queue-state.json&quot;</span>
+</span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="p">}</span>
+</span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>
+</span><span id="__span-15-18"><a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="nb">logging</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-15-19"><a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="w">  </span><span class="na">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;info&quot;</span>
+</span><span id="__span-15-20"><a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="w">  </span><span class="na">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;stdout&quot;</span>
+</span><span id="__span-15-21"><a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="vault-authentication">Vault Authentication<a class="headerlink" href="#vault-authentication" title="Permanent link">&para;</a></h3>
+<p>The application supports multiple Vault authentication methods. Choose the approach that best fits your deployment:</p>
+<ul>
+<li><strong>Vault Agent</strong> (recommended) - Automatic authentication, no config needed</li>
+<li><strong>Direct Authentication</strong> - Token, AppRole, Kubernetes, JWT, or TLS Certificate</li>
+</ul>
+<h4 id="option-1-vault-agent-recommended">Option 1: Vault Agent (Recommended)<a class="headerlink" href="#option-1-vault-agent-recommended" title="Permanent link">&para;</a></h4>
+<p>Vault Agent handles authentication automatically. Simply point to the agent's listener:</p>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nb">vault</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="na">agent_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;http://127.0.0.1:8200&quot;</span><span class="c1">  # Vault Agent listener</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="na">transit_mount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;transit&quot;</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="na">key_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryption-key&quot;</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="c1">  # No auth block needed</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<h4 id="option-2-direct-authentication">Option 2: Direct Authentication<a class="headerlink" href="#option-2-direct-authentication" title="Permanent link">&para;</a></h4>
+<p>For environments without Vault Agent, configure one of the following methods:</p>
+<h5 id="token-authentication">Token Authentication<a class="headerlink" href="#token-authentication" title="Permanent link">&para;</a></h5>
+<p><strong>Use case:</strong> Development and testing only</p>
+<p><strong>Configuration:</strong>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nb">vault</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="na">agent_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://vault.example.com:8200&quot;</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="na">transit_mount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;transit&quot;</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span><span class="na">key_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryption-key&quot;</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span><span class="nb">auth</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">    </span><span class="na">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;token&quot;</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">    </span><span class="nb">token</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">      </span><span class="na">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;hvs.CAES...&quot;</span><span class="c1">  # Or set VAULT_TOKEN env var</span>
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="p">}</span>
+</span></code></pre></div></p>
+<p><strong>Environment variables:</strong>
+- <code>VAULT_TOKEN</code> - Vault token
+- <code>VAULT_NAMESPACE</code> - Vault namespace (optional)</p>
+<h5 id="approle-authentication">AppRole Authentication<a class="headerlink" href="#approle-authentication" title="Permanent link">&para;</a></h5>
+<p><strong>Use case:</strong> Production applications and services</p>
+<p><strong>Configuration:</strong>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nb">vault</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="na">agent_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://vault.example.com:8200&quot;</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="na">transit_mount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;transit&quot;</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">  </span><span class="na">key_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryption-key&quot;</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">  </span><span class="nb">auth</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">    </span><span class="na">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;approle&quot;</span>
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">    </span><span class="nb">approle</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">      </span><span class="na">role_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;your-role-id&quot;</span><span class="c1">      # Or set VAULT_ROLE_ID env var</span>
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="w">      </span><span class="na">secret_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;your-secret-id&quot;</span><span class="c1">  # Or set VAULT_SECRET_ID env var</span>
+</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="w">      </span><span class="na">mount_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auth/approle&quot;   # Optional, defaults to &quot;auth/approle&quot;</span>
+</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a><span class="p">}</span>
+</span></code></pre></div></p>
+<p><strong>Environment variables:</strong>
+- <code>VAULT_ROLE_ID</code> - AppRole role ID
+- <code>VAULT_SECRET_ID</code> - AppRole secret ID</p>
+<h5 id="kubernetes-authentication">Kubernetes Authentication<a class="headerlink" href="#kubernetes-authentication" title="Permanent link">&para;</a></h5>
+<p><strong>Use case:</strong> Kubernetes deployments</p>
+<p><strong>Configuration:</strong>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nb">vault</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="na">agent_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://vault.example.com:8200&quot;</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span><span class="na">transit_mount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;transit&quot;</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="na">key_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryption-key&quot;</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">  </span><span class="nb">auth</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">    </span><span class="na">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;kubernetes&quot;</span>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">    </span><span class="nb">kubernetes</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">      </span><span class="na">role</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryptor&quot;</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">      </span><span class="na">token_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/var/run/secrets/kubernetes.io/serviceaccount/token&quot;</span><span class="c1">  # Optional</span>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">      </span><span class="na">mount_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auth/kubernetes&quot;</span><span class="c1">  # Optional</span>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="p">}</span>
+</span></code></pre></div></p>
+<p><strong>Environment variables:</strong> None (uses service account token file)</p>
+<h5 id="jwt-authentication">JWT Authentication<a class="headerlink" href="#jwt-authentication" title="Permanent link">&para;</a></h5>
+<p><strong>Use case:</strong> CI/CD pipelines, OIDC providers</p>
+<p><strong>Configuration:</strong>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nb">vault</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="na">agent_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://vault.example.com:8200&quot;</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="na">transit_mount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;transit&quot;</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="na">key_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryption-key&quot;</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">  </span><span class="nb">auth</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">    </span><span class="na">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;jwt&quot;</span>
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">    </span><span class="nb">jwt</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">      </span><span class="na">role</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryptor&quot;</span>
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="w">      </span><span class="na">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/path/to/jwt/token&quot;</span>
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="w">      </span><span class="na">mount_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auth/jwt&quot;</span><span class="c1">  # Optional</span>
+</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="p">}</span>
+</span></code></pre></div></p>
+<p><strong>Environment variables:</strong> None (uses JWT file specified in config)</p>
+<h5 id="tls-certificate-authentication">TLS Certificate Authentication<a class="headerlink" href="#tls-certificate-authentication" title="Permanent link">&para;</a></h5>
+<p><strong>Use case:</strong> Mutual TLS environments</p>
+<p><strong>Configuration:</strong>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nb">vault</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="na">agent_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://vault.example.com:8200&quot;</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span><span class="na">transit_mount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;transit&quot;</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span><span class="na">key_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryption-key&quot;</span>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">  </span><span class="nb">auth</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="w">    </span><span class="na">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cert&quot;</span>
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="w">    </span><span class="nb">cert</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="w">      </span><span class="na">client_cert</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/path/to/client.crt&quot;</span>
+</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="w">      </span><span class="na">client_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/path/to/client.key&quot;</span>
+</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="w">      </span><span class="na">mount_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auth/cert&quot;</span><span class="c1">  # Optional</span>
+</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="w">      </span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file-encryptor&quot;</span><span class="c1">   # Optional, defaults to cert common name</span>
+</span><span id="__span-21-13"><a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-21-14"><a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-21-15"><a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a><span class="p">}</span>
+</span></code></pre></div></p>
+<p><strong>Environment variables:</strong> None (uses certificate files specified in config)</p>
+<h4 id="authentication-best-practices">Authentication Best Practices<a class="headerlink" href="#authentication-best-practices" title="Permanent link">&para;</a></h4>
+<p><strong>Security:</strong>
+- Use environment variables for sensitive credentials instead of hardcoding in config files
+- Rotate credentials regularly
+- Use least-privilege Vault policies for each authentication method</p>
+<p><strong>Production recommendations:</strong>
+- <strong>Preferred:</strong> Vault Agent or platform identity authentication
+- <strong>Avoid:</strong> Token authentication (development/testing only)</p>
+<p><strong>Configuration rules:</strong>
+- Only <strong>one authentication method</strong> can be configured at a time
+- Environment variables override configuration file values</p>
+<p><strong>Example with environment variables:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Token authentication</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">VAULT_TOKEN</span><span class="o">=</span><span class="s2">&quot;hvs.CAES...&quot;</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>./bin/file-encryptor<span class="w"> </span>watch<span class="w"> </span>-c<span class="w"> </span>config.hcl
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="c1"># AppRole authentication</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="nb">export</span><span class="w"> </span><span class="nv">VAULT_ROLE_ID</span><span class="o">=</span><span class="s2">&quot;your-role-id&quot;</span>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="nb">export</span><span class="w"> </span><span class="nv">VAULT_SECRET_ID</span><span class="o">=</span><span class="s2">&quot;your-secret-id&quot;</span>
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>./bin/file-encryptor<span class="w"> </span>encrypt<span class="w"> </span>-i<span class="w"> </span>file.txt<span class="w"> </span>-o<span class="w"> </span>file.enc<span class="w"> </span>-c<span class="w"> </span>config.hcl
+</span></code></pre></div></p>
+<h3 id="chunk-size-configuration">Chunk Size Configuration<a class="headerlink" href="#chunk-size-configuration" title="Permanent link">&para;</a></h3>
+<p>Control memory usage and performance by configuring the encryption chunk size:</p>
+<p><strong>In Configuration File</strong> (<code>config.hcl</code>):
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nb">encryption</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="c1">  # ... other settings ...</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span><span class="na">chunk_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;2MB&quot;</span><span class="c1">  # Options: 64KB-10MB, default 1MB</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="p">}</span>
+</span></code></pre></div></p>
+<p><strong>CLI Override</strong>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>./bin/file-encryptor<span class="w"> </span>encrypt<span class="w"> </span>-i<span class="w"> </span>file.txt<span class="w"> </span>-o<span class="w"> </span>file.txt.enc<span class="w"> </span>--chunk-size<span class="w"> </span>512KB
+</span></code></pre></div></p>
+<p><strong>Supported Formats</strong>:
+- Standard: <code>"64KB"</code>, <code>"512KB"</code>, <code>"1MB"</code>, <code>"2MB"</code>, <code>"10MB"</code>
+- Decimal: <code>"1.5MB"</code>, <code>"0.5GB"</code>
+- With spaces: <code>"1 MB"</code>, <code>"512 KB"</code>
+- Case insensitive: <code>"1mb"</code>, <code>"1MB"</code>, <code>"1Mb"</code>
+- Plain numbers: <code>"1024"</code> (bytes)</p>
+<p><strong>Size Recommendations</strong>:
+- Small files (&lt;1MB): <code>256KB</code> - Lower memory usage
+- Medium files (1-100MB): <code>512KB-2MB</code> - Balanced (default: 1MB)
+- Large files (100MB-1GB): <code>2MB-4MB</code> - Better throughput
+- Very large files (&gt;1GB): <code>4MB-8MB</code> - Maximum performance</p>
+<p><strong>Note</strong>: Service mode processes one file at a time, so choose chunk size based on your typical file size, not concurrent operations.</p>
+<p>See <a href="guides/CHUNK_SIZE_TUNING/"><code>guides/CHUNK_SIZE_TUNING.md</code></a> for detailed tuning guide with benchmarking and troubleshooting.</p>
+<h3 id="hot-reload">Hot Reload<a class="headerlink" href="#hot-reload" title="Permanent link">&para;</a></h3>
+<p>The application supports configuration hot-reload without restart on <strong>Unix systems</strong> (Linux, macOS, BSD).</p>
+<p><strong>Unix/Linux/macOS:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Find the process ID</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>file-encryptor
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="c1"># Send SIGHUP signal</span>
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="nb">kill</span><span class="w"> </span>-HUP<span class="w"> </span>&lt;pid&gt;
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="c1"># or</span>
+</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>pkill<span class="w"> </span>-SIGHUP<span class="w"> </span>file-encryptor
+</span></code></pre></div></p>
+<p><strong>Windows:</strong></p>
+<blockquote>
+<p><strong>Note</strong>: Hot-reload via signals is not supported on Windows due to OS limitations. To reload configuration, you must restart the service/application.</p>
+<p><strong>To reload configuration on Windows</strong>:
+1. Stop the application (Ctrl+C or Stop-Service)
+2. Update the configuration file
+3. Restart the application</p>
+<p><strong>For Production</strong>: Use a Windows Service wrapper like <a href="https://nssm.cc/">NSSM</a> or <a href="https://github.com/winsw/winsw">WinSW</a> that can be easily stopped/started via service commands.</p>
+</blockquote>
+<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<h3 id="command-line-interface">Command-Line Interface<a class="headerlink" href="#command-line-interface" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>file-encryptor [command] [flags]
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>Commands:
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>  watch         Run as a service watching directories for files
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>  encrypt       Encrypt a single file
+</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>  decrypt       Decrypt a single file
+</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>  rewrap        Re-wrap encrypted data keys to newer versions
+</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>  key-versions  Display encryption key version statistics
+</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>  help          Help about any command
+</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a>
+</span><span id="__span-26-11"><a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>Global Flags:
+</span><span id="__span-26-12"><a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>  -c, --config string      Configuration file path (default &quot;config.hcl&quot;)
+</span><span id="__span-26-13"><a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a>  -l, --log-level string   Log level (debug, info, error) (default &quot;info&quot;)
+</span><span id="__span-26-14"><a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a>  -o, --log-output string  Log output (stdout, stderr, or file path) (default &quot;stdout&quot;)
+</span><span id="__span-26-15"><a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a>  -h, --help              Help for file-encryptor
+</span><span id="__span-26-16"><a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a>  -v, --version           Version information
+</span></code></pre></div>
+<h3 id="service-mode-examples">Service Mode Examples<a class="headerlink" href="#service-mode-examples" title="Permanent link">&para;</a></h3>
+<p><strong>Start file watcher:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>./bin/file-encryptor<span class="w"> </span>watch<span class="w"> </span>-c<span class="w"> </span>config.hcl
+</span></code></pre></div></p>
+<p><strong>Start with debug logging:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>./bin/file-encryptor<span class="w"> </span>watch<span class="w"> </span>-c<span class="w"> </span>config.hcl<span class="w"> </span>--log-level<span class="w"> </span>debug
+</span></code></pre></div></p>
+<p><strong>Log to file:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>./bin/file-encryptor<span class="w"> </span>watch<span class="w"> </span>-c<span class="w"> </span>config.hcl<span class="w"> </span>--log-output<span class="w"> </span>/var/log/file-encryptor.log
+</span></code></pre></div></p>
+<h3 id="cli-mode-examples">CLI Mode Examples<a class="headerlink" href="#cli-mode-examples" title="Permanent link">&para;</a></h3>
+<p><strong>Encrypt a file:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>./bin/file-encryptor<span class="w"> </span>encrypt<span class="w"> </span>-i<span class="w"> </span>sensitive.pdf<span class="w"> </span>-o<span class="w"> </span>sensitive.pdf.enc
+</span></code></pre></div></p>
+<p><strong>Encrypt with custom key file:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>./bin/file-encryptor<span class="w"> </span>encrypt<span class="w"> </span>-i<span class="w"> </span>data.txt<span class="w"> </span>-o<span class="w"> </span>data.txt.enc<span class="w"> </span>-k<span class="w"> </span>my-key.key
+</span></code></pre></div></p>
+<p><strong>Encrypt with checksum:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>./bin/file-encryptor<span class="w"> </span>encrypt<span class="w"> </span>-i<span class="w"> </span>file.dat<span class="w"> </span>-o<span class="w"> </span>file.dat.enc<span class="w"> </span>--checksum
+</span></code></pre></div></p>
+<p><strong>Decrypt a file:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>./bin/file-encryptor<span class="w"> </span>decrypt<span class="w"> </span>-i<span class="w"> </span>file.dat.enc<span class="w"> </span>-k<span class="w"> </span>file.dat.key<span class="w"> </span>-o<span class="w"> </span>decrypted-file.dat
+</span></code></pre></div></p>
+<p><strong>Decrypt with checksum verification:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>./bin/file-encryptor<span class="w"> </span>decrypt<span class="w"> </span>-i<span class="w"> </span>file.dat.enc<span class="w"> </span>-k<span class="w"> </span>file.dat.key<span class="w"> </span>-o<span class="w"> </span>decrypted-file.dat<span class="w"> </span>--verify-checksum
+</span></code></pre></div></p>
+<p><strong>Re-wrap encryption keys to newer version:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="c1"># Re-wrap all keys in a directory to minimum version 2</span>
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>./bin/file-encryptor<span class="w"> </span>rewrap<span class="w"> </span>--dir<span class="w"> </span>/path/to/keys<span class="w"> </span>--recursive<span class="w"> </span>--min-version<span class="w"> </span><span class="m">2</span>
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="c1"># Dry-run to preview what would be re-wrapped</span>
+</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>./bin/file-encryptor<span class="w"> </span>rewrap<span class="w"> </span>--dir<span class="w"> </span>/path/to/keys<span class="w"> </span>--dry-run<span class="w"> </span>--min-version<span class="w"> </span><span class="m">2</span>
+</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>
+</span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="c1"># Export results as JSON</span>
+</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>./bin/file-encryptor<span class="w"> </span>rewrap<span class="w"> </span>--dir<span class="w"> </span>/path/to/keys<span class="w"> </span>--min-version<span class="w"> </span><span class="m">2</span><span class="w"> </span>--format<span class="w"> </span>json
+</span></code></pre></div></p>
+<p><strong>Display key version statistics:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="c1"># Show version distribution for all keys in a directory (no config needed)</span>
+</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>./bin/file-encryptor<span class="w"> </span>key-versions<span class="w"> </span>--dir<span class="w"> </span>/path/to/keys<span class="w"> </span>--recursive
+</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>
+</span><span id="__span-36-4"><a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="c1"># Output as JSON for analysis</span>
+</span><span id="__span-36-5"><a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>./bin/file-encryptor<span class="w"> </span>key-versions<span class="w"> </span>--dir<span class="w"> </span>/path/to/keys<span class="w"> </span>--format<span class="w"> </span>json
+</span><span id="__span-36-6"><a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>
+</span><span id="__span-36-7"><a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a><span class="c1"># Output as CSV for spreadsheets</span>
+</span><span id="__span-36-8"><a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a>./bin/file-encryptor<span class="w"> </span>key-versions<span class="w"> </span>--dir<span class="w"> </span>/path/to/keys<span class="w"> </span>--format<span class="w"> </span>csv
+</span></code></pre></div></p>
+<p><strong>Note</strong>: The <code>key-versions</code> command works offline and does not require Vault configuration.</p>
+<p>For detailed rewrap documentation, see <a href="guides/REWRAP_GUIDE/">REWRAP_GUIDE.md</a>.</p>
+<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<p>For detailed architecture documentation, see <a href="ARCHITECTURE/">ARCHITECTURE.md</a>.</p>
+<h2 id="vault-policies">Vault Policies<a class="headerlink" href="#vault-policies" title="Permanent link">&para;</a></h2>
+<p>The application requires specific Vault Transit Engine capabilities depending on the operation mode. Three separate policies are recommended for least-privilege access:</p>
+<h4 id="1-encryption-policy">1. Encryption Policy<a class="headerlink" href="#1-encryption-policy" title="Permanent link">&para;</a></h4>
+<p>Required for encrypting files (generating and encrypting data keys):</p>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="c1"># Policy name: file-encryptor-encrypt</span>
+</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="err">path</span><span class="w"> </span><span class="s2">&quot;transit/datakey/plaintext/file-encryption-key&quot;</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="w">  </span><span class="na">capabilities</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;update&quot;</span><span class="p">]</span>
+</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>Capabilities:</strong>
+- <code>datakey/plaintext/*</code> - Generate a new data encryption key (DEK) in both plaintext and ciphertext forms</p>
+<p><strong>Used by:</strong>
+- Service mode encryption operations
+- CLI <code>encrypt</code> command</p>
+<h4 id="2-decryption-policy">2. Decryption Policy<a class="headerlink" href="#2-decryption-policy" title="Permanent link">&para;</a></h4>
+<p>Required for decrypting files (decrypting data keys):</p>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1"># Policy name: file-encryptor-decrypt</span>
+</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="err">path</span><span class="w"> </span><span class="s2">&quot;transit/decrypt/file-encryption-key&quot;</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="w">  </span><span class="na">capabilities</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;update&quot;</span><span class="p">]</span>
+</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>Capabilities:</strong>
+- <code>decrypt/*</code> - Decrypt the ciphertext DEK to obtain the plaintext DEK</p>
+<p><strong>Used by:</strong>
+- Service mode decryption operations
+- CLI <code>decrypt</code> command</p>
+<h4 id="3-re-wrap-policy">3. Re-wrap Policy<a class="headerlink" href="#3-re-wrap-policy" title="Permanent link">&para;</a></h4>
+<p>Required for key rotation (re-wrapping encrypted DEKs to newer key versions):</p>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="c1"># Policy name: file-encryptor-rewrap</span>
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="err">path</span><span class="w"> </span><span class="s2">&quot;transit/rewrap/file-encryption-key&quot;</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="w">  </span><span class="na">capabilities</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;update&quot;</span><span class="p">]</span>
+</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>Capabilities:</strong>
+- <code>rewrap/*</code> - Re-encrypt an existing ciphertext DEK with the latest key version without exposing plaintext</p>
+<p><strong>Used by:</strong>
+- CLI <code>rewrap</code> command</p>
+<h4 id="combined-policy-developmenttesting-only">Combined Policy (Development/Testing Only)<a class="headerlink" href="#combined-policy-developmenttesting-only" title="Permanent link">&para;</a></h4>
+<p>For development or testing environments, you can use a combined policy with all capabilities:</p>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="c1"># Policy name: file-encryptor-combined (NOT recommended for production)</span>
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="err">path</span><span class="w"> </span><span class="s2">&quot;transit/datakey/plaintext/file-encryption-key&quot;</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="w">  </span><span class="na">capabilities</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;update&quot;</span><span class="p">]</span>
+</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="p">}</span>
+</span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>
+</span><span id="__span-40-6"><a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a><span class="err">path</span><span class="w"> </span><span class="s2">&quot;transit/decrypt/file-encryption-key&quot;</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-40-7"><a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a><span class="w">  </span><span class="na">capabilities</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;update&quot;</span><span class="p">]</span>
+</span><span id="__span-40-8"><a id="__codelineno-40-8" name="__codelineno-40-8" href="#__codelineno-40-8"></a><span class="p">}</span>
+</span><span id="__span-40-9"><a id="__codelineno-40-9" name="__codelineno-40-9" href="#__codelineno-40-9"></a>
+</span><span id="__span-40-10"><a id="__codelineno-40-10" name="__codelineno-40-10" href="#__codelineno-40-10"></a><span class="err">path</span><span class="w"> </span><span class="s2">&quot;transit/rewrap/file-encryption-key&quot;</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-40-11"><a id="__codelineno-40-11" name="__codelineno-40-11" href="#__codelineno-40-11"></a><span class="w">  </span><span class="na">capabilities</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;update&quot;</span><span class="p">]</span>
+</span><span id="__span-40-12"><a id="__codelineno-40-12" name="__codelineno-40-12" href="#__codelineno-40-12"></a><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>Production Recommendation:</strong>
+- Use <strong>separate policies</strong> for each operation type
+- Assign policies based on the specific role (encryption-only systems, decryption-only systems, key rotation operators)
+- Apply the principle of least privilege</p>
+<h4 id="policy-assignment-examples">Policy Assignment Examples<a class="headerlink" href="#policy-assignment-examples" title="Permanent link">&para;</a></h4>
+<p><strong>HCP Vault (Token Auth):</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="c1"># Create policies</span>
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>vault<span class="w"> </span>policy<span class="w"> </span>write<span class="w"> </span>file-encryptor-encrypt<span class="w"> </span>encrypt-policy.hcl
+</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>vault<span class="w"> </span>policy<span class="w"> </span>write<span class="w"> </span>file-encryptor-decrypt<span class="w"> </span>decrypt-policy.hcl
+</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a>vault<span class="w"> </span>policy<span class="w"> </span>write<span class="w"> </span>file-encryptor-rewrap<span class="w"> </span>rewrap-policy.hcl
+</span><span id="__span-41-5"><a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a>
+</span><span id="__span-41-6"><a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a><span class="c1"># Generate tokens with specific policies</span>
+</span><span id="__span-41-7"><a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a>vault<span class="w"> </span>token<span class="w"> </span>create<span class="w"> </span>-policy<span class="o">=</span>file-encryptor-encrypt<span class="w"> </span>-period<span class="o">=</span>24h
+</span><span id="__span-41-8"><a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a>vault<span class="w"> </span>token<span class="w"> </span>create<span class="w"> </span>-policy<span class="o">=</span>file-encryptor-decrypt<span class="w"> </span>-period<span class="o">=</span>24h
+</span><span id="__span-41-9"><a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>vault<span class="w"> </span>token<span class="w"> </span>create<span class="w"> </span>-policy<span class="o">=</span>file-encryptor-rewrap<span class="w"> </span>-period<span class="o">=</span>1h
+</span></code></pre></div></p>
+<p><strong>Vault Enterprise (Certificate Auth):</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="c1"># Map certificate common names to policies</span>
+</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>vault<span class="w"> </span>write<span class="w"> </span>auth/cert/certs/file-encryptor-encrypt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">  </span><span class="nv">certificate</span><span class="o">=</span>@client-encrypt.crt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-42-4"><a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="w">  </span><span class="nv">policies</span><span class="o">=</span>file-encryptor-encrypt
+</span><span id="__span-42-5"><a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a>
+</span><span id="__span-42-6"><a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a>vault<span class="w"> </span>write<span class="w"> </span>auth/cert/certs/file-encryptor-decrypt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-42-7"><a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a><span class="w">  </span><span class="nv">certificate</span><span class="o">=</span>@client-decrypt.crt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-42-8"><a id="__codelineno-42-8" name="__codelineno-42-8" href="#__codelineno-42-8"></a><span class="w">  </span><span class="nv">policies</span><span class="o">=</span>file-encryptor-decrypt
+</span><span id="__span-42-9"><a id="__codelineno-42-9" name="__codelineno-42-9" href="#__codelineno-42-9"></a>
+</span><span id="__span-42-10"><a id="__codelineno-42-10" name="__codelineno-42-10" href="#__codelineno-42-10"></a>vault<span class="w"> </span>write<span class="w"> </span>auth/cert/certs/file-encryptor-rewrap<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-42-11"><a id="__codelineno-42-11" name="__codelineno-42-11" href="#__codelineno-42-11"></a><span class="w">  </span><span class="nv">certificate</span><span class="o">=</span>@client-rewrap.crt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-42-12"><a id="__codelineno-42-12" name="__codelineno-42-12" href="#__codelineno-42-12"></a><span class="w">  </span><span class="nv">policies</span><span class="o">=</span>file-encryptor-rewrap
+</span></code></pre></div></p>
+<p><strong>Note:</strong> The <code>key-versions</code> command does not require any Vault access as it operates offline on local <code>.key</code> files.</p>
+<p>For complete Vault setup instructions including policy configuration, see:
+- <a href="guides/VAULT_SETUP_GUIDE/">Vault Setup Guide (HCP)</a>
+- <a href="guides/VAULT_ENTERPRISE_SETUP_GUIDE/">Vault Enterprise Setup Guide</a></p>
+<h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
+<h3 id="user-guides">User Guides<a class="headerlink" href="#user-guides" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="ARCHITECTURE/">Architecture</a> - System architecture and design</li>
+<li><a href="guides/CLI_MODE/">CLI Mode Guide</a> - CLI usage (Unix/Linux/macOS)</li>
+<li><a href="guides/CLI_MODE_WINDOWS/">CLI Mode Guide (Windows)</a> - CLI usage for Windows</li>
+<li><a href="guides/REWRAP_GUIDE/">Rewrap Guide</a> - Key re-wrapping documentation</li>
+<li><a href="guides/CHUNK_SIZE_TUNING/">Chunk Size Tuning</a> - Performance optimization guide</li>
+</ul>
+<h3 id="setup-guides">Setup Guides<a class="headerlink" href="#setup-guides" title="Permanent link">&para;</a></h3>
+<p><strong>Unix/Linux/macOS:</strong>
+- <a href="guides/VAULT_SETUP_GUIDE/">Vault Setup Guide (HCP)</a> - HCP Vault setup instructions
+- <a href="guides/VAULT_ENTERPRISE_SETUP_GUIDE/">Vault Enterprise Setup</a> - Vault Enterprise setup</p>
+<p><strong>Windows:</strong>
+- <a href="guides/VAULT_SETUP_GUIDE_WINDOWS/">Vault Setup Guide (HCP) - Windows</a> - HCP Vault setup for Windows</p>
+<blockquote>
+<p><strong>Note</strong>: Vault Enterprise setup guide for Windows follows the same patterns as the Unix guide with PowerShell commands instead of bash. See the Unix guide and adapt commands for Windows.</p>
+</blockquote>
+<h2 id="platform-specific-notes">Platform-Specific Notes<a class="headerlink" href="#platform-specific-notes" title="Permanent link">&para;</a></h2>
+<h3 id="windows">Windows<a class="headerlink" href="#windows" title="Permanent link">&para;</a></h3>
+<p>The application fully supports Windows with the following considerations:</p>
+<p><strong>Installation</strong>:
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="c"># Download the Windows binary from releases</span>
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="c"># Extract to C:\Program Files\file-encryptor\</span>
+</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="c"># Add to PATH for easy access</span>
+</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a><span class="nv">$env:PATH</span> <span class="p">+=</span> <span class="s2">&quot;;C:\Program Files\file-encryptor&quot;</span>
+</span></code></pre></div></p>
+<p><strong>Fully Supported:</strong>
+- CLI mode (encrypt/decrypt single files)
+- Service mode (watch directories)
+- File system watching via fsnotify
+- Graceful shutdown (Ctrl+C)
+- All crypto operations
+- Key re-wrapping and version auditing</p>
+<p><strong>Important Differences:</strong>
+- <strong>Hot-reload not available</strong>: Configuration changes require service restart
+- <strong>Signal handling</strong>: Only Ctrl+C and SIGTERM work (no SIGHUP support)
+- <strong>Path separators</strong>: Use forward slashes (<code>/</code>) or double backslashes (<code>\\</code>) in config files
+- <strong>File permissions</strong>: Use <code>icacls</code> instead of <code>chmod</code> for setting permissions</p>
+<p><strong>Running as Windows Service:</strong>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="c"># Install NSSM (run as Administrator)</span>
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="n">choco</span> <span class="n">install</span> <span class="n">nssm</span>
+</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a>
+</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="c"># Create service</span>
+</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="n">nssm</span> <span class="n">install</span> <span class="n">FileEncryptor</span> <span class="s2">&quot;C:\Program Files\file-encryptor\file-encryptor.exe&quot;</span>
+</span><span id="__span-44-6"><a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a><span class="n">nssm</span> <span class="nb">set </span><span class="n">FileEncryptor</span> <span class="n">AppParameters</span> <span class="s2">&quot;watch -c C:\ProgramData\file-encryptor\config.hcl&quot;</span>
+</span><span id="__span-44-7"><a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a><span class="n">nssm</span> <span class="nb">set </span><span class="n">FileEncryptor</span> <span class="nb">Start </span><span class="n">SERVICE_AUTO_START</span>
+</span><span id="__span-44-8"><a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a>
+</span><span id="__span-44-9"><a id="__codelineno-44-9" name="__codelineno-44-9" href="#__codelineno-44-9"></a><span class="c"># Start service</span>
+</span><span id="__span-44-10"><a id="__codelineno-44-10" name="__codelineno-44-10" href="#__codelineno-44-10"></a><span class="nb">Start-Service</span> <span class="n">FileEncryptor</span>
+</span></code></pre></div></p>
+<p><strong>Configuration Example (Windows paths):</strong>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="nb">encryption</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="w">  </span><span class="na">source_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;C:/data/source&quot;</span><span class="c1">  # Forward slashes recommended</span>
+</span><span id="__span-45-3"><a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a><span class="w">  </span><span class="na">dest_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;C:/data/encrypted&quot;</span>
+</span><span id="__span-45-4"><a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a><span class="p">}</span>
+</span><span id="__span-45-5"><a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a>
+</span><span id="__span-45-6"><a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a><span class="nb">queue</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-45-7"><a id="__codelineno-45-7" name="__codelineno-45-7" href="#__codelineno-45-7"></a><span class="w">  </span><span class="na">state_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;C:/ProgramData/file-encryptor/queue-state.json&quot;</span>
+</span><span id="__span-45-8"><a id="__codelineno-45-8" name="__codelineno-45-8" href="#__codelineno-45-8"></a><span class="p">}</span>
+</span><span id="__span-45-9"><a id="__codelineno-45-9" name="__codelineno-45-9" href="#__codelineno-45-9"></a>
+</span><span id="__span-45-10"><a id="__codelineno-45-10" name="__codelineno-45-10" href="#__codelineno-45-10"></a><span class="nb">logging</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-45-11"><a id="__codelineno-45-11" name="__codelineno-45-11" href="#__codelineno-45-11"></a><span class="w">  </span><span class="na">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;C:/ProgramData/file-encryptor/logs/app.log&quot;</span>
+</span><span id="__span-45-12"><a id="__codelineno-45-12" name="__codelineno-45-12" href="#__codelineno-45-12"></a><span class="p">}</span>
+</span></code></pre></div></p>
+<p><strong>PowerShell Examples:</strong>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="c"># CLI mode - works perfectly</span>
+</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a><span class="p">.\</span><span class="n">file-encryptor</span><span class="p">.</span><span class="n">exe</span> <span class="n">encrypt</span> <span class="n">-i</span> <span class="n">data</span><span class="p">.</span><span class="n">txt</span> <span class="n">-o</span> <span class="n">data</span><span class="p">.</span><span class="n">enc</span>
+</span><span id="__span-46-3"><a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a><span class="p">.\</span><span class="n">file-encryptor</span><span class="p">.</span><span class="n">exe</span> <span class="n">decrypt</span> <span class="n">-i</span> <span class="n">data</span><span class="p">.</span><span class="n">enc</span> <span class="n">-k</span> <span class="n">data</span><span class="p">.</span><span class="n">key</span> <span class="n">-o</span> <span class="n">data</span><span class="p">.</span><span class="n">txt</span>
+</span><span id="__span-46-4"><a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a>
+</span><span id="__span-46-5"><a id="__codelineno-46-5" name="__codelineno-46-5" href="#__codelineno-46-5"></a><span class="c"># Service mode</span>
+</span><span id="__span-46-6"><a id="__codelineno-46-6" name="__codelineno-46-6" href="#__codelineno-46-6"></a><span class="p">.\</span><span class="n">file-encryptor</span><span class="p">.</span><span class="n">exe</span> <span class="n">watch</span> <span class="n">-c</span> <span class="n">config</span><span class="p">.</span><span class="n">hcl</span>
+</span><span id="__span-46-7"><a id="__codelineno-46-7" name="__codelineno-46-7" href="#__codelineno-46-7"></a><span class="c"># Press Ctrl+C to stop</span>
+</span><span id="__span-46-8"><a id="__codelineno-46-8" name="__codelineno-46-8" href="#__codelineno-46-8"></a>
+</span><span id="__span-46-9"><a id="__codelineno-46-9" name="__codelineno-46-9" href="#__codelineno-46-9"></a><span class="c"># To reload config: Stop and restart the service</span>
+</span><span id="__span-46-10"><a id="__codelineno-46-10" name="__codelineno-46-10" href="#__codelineno-46-10"></a><span class="nb">Stop-Service</span> <span class="n">FileEncryptor</span>
+</span><span id="__span-46-11"><a id="__codelineno-46-11" name="__codelineno-46-11" href="#__codelineno-46-11"></a><span class="nb">Start-Service</span> <span class="n">FileEncryptor</span>
+</span></code></pre></div></p>
+<p><strong>Windows-Specific Guides:</strong>
+- <a href="guides/CLI_MODE_WINDOWS/">CLI Mode (Windows)</a>
+- <a href="guides/VAULT_SETUP_GUIDE_WINDOWS/">Vault Setup (Windows)</a></p>
+<h3 id="linuxmacos">Linux/macOS<a class="headerlink" href="#linuxmacos" title="Permanent link">&para;</a></h3>
+<p>All features fully supported including hot-reload via SIGHUP signal.</p>
+<p><strong>Installation:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="c1"># Download binary from releases</span>
+</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a><span class="c1"># Make executable</span>
+</span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>chmod<span class="w"> </span>+x<span class="w"> </span>file-encryptor-linux-amd64
+</span><span id="__span-47-4"><a id="__codelineno-47-4" name="__codelineno-47-4" href="#__codelineno-47-4"></a>sudo<span class="w"> </span>mv<span class="w"> </span>file-encryptor-linux-amd64<span class="w"> </span>/usr/local/bin/file-encryptor
+</span><span id="__span-47-5"><a id="__codelineno-47-5" name="__codelineno-47-5" href="#__codelineno-47-5"></a>
+</span><span id="__span-47-6"><a id="__codelineno-47-6" name="__codelineno-47-6" href="#__codelineno-47-6"></a><span class="c1"># Or build from source</span>
+</span><span id="__span-47-7"><a id="__codelineno-47-7" name="__codelineno-47-7" href="#__codelineno-47-7"></a>make<span class="w"> </span>build
+</span></code></pre></div></p>
+<p><strong>Running as systemd service (Linux):</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>sudo<span class="w"> </span>cp<span class="w"> </span>file-encryptor.service<span class="w"> </span>/etc/systemd/system/
+</span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>daemon-reload
+</span><span id="__span-48-3"><a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>file-encryptor
+</span><span id="__span-48-4"><a id="__codelineno-48-4" name="__codelineno-48-4" href="#__codelineno-48-4"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>file-encryptor
+</span></code></pre></div></p>
+<p><strong>Hot-reload configuration:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="c1"># Send SIGHUP to reload config without restart</span>
+</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>pkill<span class="w"> </span>-SIGHUP<span class="w"> </span>file-encryptor
+</span></code></pre></div></p>
+<h2 id="security-considerations">Security Considerations<a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h2>
+<h3 id="cryptographic-security">Cryptographic Security<a class="headerlink" href="#cryptographic-security" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Envelope Encryption</strong>: Data keys never stored unencrypted</li>
+<li><strong>AES-256-GCM</strong>: Authenticated encryption with 256-bit keys</li>
+<li><strong>Unique Nonces</strong>: Each chunk uses base nonce + counter (prevents nonce reuse)</li>
+<li><strong>File Metadata Authentication</strong>: File size authenticated via GCM additional data</li>
+<li><strong>Nonce Overflow Protection</strong>: Maximum 2^32 chunks per file (~4 petabytes with 1MB chunks)</li>
+</ul>
+<h3 id="memory-security">Memory Security<a class="headerlink" href="#memory-security" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Constant-Time Zeroing</strong>: Uses <code>crypto/subtle</code> to prevent compiler optimization</li>
+<li><strong>Memory Locking</strong>: Plaintext DEKs locked in RAM (mlock) to prevent swapping to disk</li>
+<li><strong>Immediate Cleanup</strong>: Keys zeroed from memory immediately after use</li>
+<li><strong>Secure Patterns</strong>: Defer-based cleanup ensures keys are always zeroed</li>
+</ul>
+<h3 id="dos-prevention">DOS Prevention<a class="headerlink" href="#dos-prevention" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Chunk Size Validation</strong>: Rejects chunks larger than 10MB during decryption</li>
+<li><strong>Resource Protection</strong>: Prevents memory exhaustion from malformed files</li>
+</ul>
+<h3 id="infrastructure-security">Infrastructure Security<a class="headerlink" href="#infrastructure-security" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Vault Agent</strong>: Can use multiple authentication methods, keeping credentials rotated, and handles several types of secrets </li>
+<li><strong>TLS</strong>: All Vault communication over HTTPS</li>
+<li><strong>Audit Logging</strong>: All operations logged with security events</li>
+<li><strong>No Primary Key Exposure</strong>: Primary key never leaves Vault</li>
+</ul>
+<h3 id="file-format-security">File Format Security<a class="headerlink" href="#file-format-security" title="Permanent link">&para;</a></h3>
+<p>Encrypted files include:
+- 12-byte master nonce (unique per file)
+- 8-byte authenticated file size
+- Per-chunk encryption with incremented nonces
+- GCM authentication tags (128-bit per chunk)</p>
+<p>For detailed security architecture, see <a href="ARCHITECTURE/"><code>ARCHITECTURE.md</code></a>.</p>
+<h2 id="support">Support<a class="headerlink" href="#support" title="Permanent link">&para;</a></h2>
+<p>For issues and questions:
+- <strong>GitHub Issues</strong>: <a href="https://github.com/gitrgoliveira/vault-file-encryption/issues">Report an issue</a>
+- <strong>Documentation</strong>: See the <code>docs/</code> directory in this repository
+- <strong>Discussions</strong>: <a href="https://github.com/gitrgoliveira/vault-file-encryption/discussions">GitHub Discussions</a></p>
+<h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
+<p>Contributions are welcome! Please see <a href="CONTRIBUTING/">CONTRIBUTING.md</a> for guidelines.</p>
+<ol>
+<li>Fork the repository</li>
+<li>Create your feature branch (<code>git checkout -b feature/amazing-feature</code>)</li>
+<li>Commit your changes (<code>git commit -m 'Add amazing feature'</code>)</li>
+<li>Push to the branch (<code>git push origin feature/amazing-feature</code>)</li>
+<li>Open a Pull Request</li>
+</ol>
+<h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
+<p>Copyright (c) 2025 Ricardo Oliveira</p>
+<p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.</p>
+<p>See <a href="LICENSE">LICENSE</a> for full details.</p>
+<h2 id="quality-and-validation">Quality and Validation<a class="headerlink" href="#quality-and-validation" title="Permanent link">&para;</a></h2>
+<p>This project includes comprehensive validation tools to ensure code quality and security:</p>
+<h3 id="running-validations">Running Validations<a class="headerlink" href="#running-validations" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="c1"># Run all validation checks</span>
+</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a>make<span class="w"> </span>validate-all
+</span><span id="__span-50-3"><a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a>
+</span><span id="__span-50-4"><a id="__codelineno-50-4" name="__codelineno-50-4" href="#__codelineno-50-4"></a><span class="c1"># Individual checks</span>
+</span><span id="__span-50-5"><a id="__codelineno-50-5" name="__codelineno-50-5" href="#__codelineno-50-5"></a>make<span class="w"> </span>fmt-check<span class="w">      </span><span class="c1"># Check code formatting</span>
+</span><span id="__span-50-6"><a id="__codelineno-50-6" name="__codelineno-50-6" href="#__codelineno-50-6"></a>make<span class="w"> </span>vet<span class="w">            </span><span class="c1"># Run go vet</span>
+</span><span id="__span-50-7"><a id="__codelineno-50-7" name="__codelineno-50-7" href="#__codelineno-50-7"></a>make<span class="w"> </span>staticcheck<span class="w">    </span><span class="c1"># Run static analysis</span>
+</span><span id="__span-50-8"><a id="__codelineno-50-8" name="__codelineno-50-8" href="#__codelineno-50-8"></a>make<span class="w"> </span>lint<span class="w">           </span><span class="c1"># Run golangci-lint</span>
+</span><span id="__span-50-9"><a id="__codelineno-50-9" name="__codelineno-50-9" href="#__codelineno-50-9"></a>make<span class="w"> </span>gosec<span class="w">          </span><span class="c1"># Run security scanner</span>
+</span><span id="__span-50-10"><a id="__codelineno-50-10" name="__codelineno-50-10" href="#__codelineno-50-10"></a>make<span class="w"> </span><span class="nb">test</span><span class="w">           </span><span class="c1"># Run all tests</span>
+</span><span id="__span-50-11"><a id="__codelineno-50-11" name="__codelineno-50-11" href="#__codelineno-50-11"></a>
+</span><span id="__span-50-12"><a id="__codelineno-50-12" name="__codelineno-50-12" href="#__codelineno-50-12"></a><span class="c1"># Build with validation</span>
+</span><span id="__span-50-13"><a id="__codelineno-50-13" name="__codelineno-50-13" href="#__codelineno-50-13"></a>make<span class="w"> </span>build-validated
+</span></code></pre></div>
+<h3 id="cicd-integration">CI/CD Integration<a class="headerlink" href="#cicd-integration" title="Permanent link">&para;</a></h3>
+<p>See <a href="https://github.com/gitrgoliveira/vault-file-encryption/blob/main/.github/workflows/build-and-test.yml">https://github.com/gitrgoliveira/vault-file-encryption/blob/main/.github/workflows/build-and-test.yml</a> for the complete CI/CD pipeline.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+        
+          
+          <a href="guides/VAULT_SETUP_GUIDE/" class="md-footer__link md-footer__link--next" aria-label="Next: Vault Setup">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Vault Setup
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 gitrgoliveira
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/gitrgoliveira/vault-file-encryption" target="_blank" rel="noopener" title="GitHub Repository" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "navigation.footer", "toc.follow", "content.code.copy", "content.code.annotate", "search.suggest", "search.highlight", "search.share"], "search": "assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>
