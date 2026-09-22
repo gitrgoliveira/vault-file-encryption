@@ -147,7 +147,7 @@ Key points:
 
 ## Prerequisites
 
-- **Go 1.25.0+** (for building from source)
+- **Go 1.27.1+** (for building from source)
 - **Vault**: One of the following:
   - **HCP Vault** cluster with Transit Engine enabled, OR
   - **Vault Enterprise** (or Community Edition) for local development
@@ -287,7 +287,7 @@ Download the latest release for your platform from the [Releases](https://github
 ### Build from Source
 
 **Prerequisites**:
-- Go 1.25.0 or later
+- Go 1.27.1 or later
 - Make (Unix/Linux/macOS) or use `go build` directly on Windows
 
 ```bash

@@ -60,7 +60,7 @@ install:
 
 lint:
 	@echo "Running golangci-lint..."
-	@which golangci-lint > /dev/null || (echo "golangci-lint not found. Installing..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+	@which golangci-lint > /dev/null || (echo "golangci-lint not found. Installing..." && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest)
 	golangci-lint run --timeout=5m ./...
 
 fmt:
