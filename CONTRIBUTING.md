@@ -42,7 +42,7 @@ Enhancement suggestions are welcome! Please include:
 
 ### Prerequisites
 
-- Go 1.25.0 or later
+- Go 1.27.1 or later
 - Make
 - golangci-lint
 - gosec
