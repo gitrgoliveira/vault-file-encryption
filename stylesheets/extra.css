@@ -1,0 +1,74 @@
+/* Custom styles for Vault File Encryption docs */
+
+:root {
+  --md-primary-fg-color: #2563EB;
+  /* Vibrant Blue */
+  --md-primary-fg-color--light: #60A5FA;
+  --md-primary-fg-color--dark: #1E40AF;
+  --md-accent-fg-color: #F59E0B;
+  /* Amber for accents */
+}
+
+/* Hero section styling for homepage */
+.md-typeset h1 {
+  font-weight: 700;
+  margin-bottom: 0.5em;
+}
+
+/* Improve code block appearance */
+.md-typeset code {
+  border-radius: 4px;
+}
+
+/* Better table styling */
+.md-typeset table:not([class]) {
+  border: 1px solid var(--md-typeset-table-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--md-primary-fg-color);
+  color: white;
+}
+
+/* Navigation improvements */
+.md-nav__title {
+  font-weight: 600;
+}
+
+.md-nav__link {
+  font-size: 0.85rem;
+}
+
+/* Footer styling */
+.md-footer {
+  margin-top: 2rem;
+}
+
+/* Admonition styling tweaks */
+.md-typeset .admonition {
+  border-radius: 4px;
+}
+
+/* Search highlight */
+.md-search-result mark {
+  background-color: rgba(63, 81, 181, 0.3);
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better spacing for content */
+.md-content {
+  padding-bottom: 3rem;
+}
+
+/* Sidebar width on larger screens */
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--primary {
+    width: 13rem;
+  }
+}
